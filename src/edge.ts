@@ -1,6 +1,8 @@
 export type { CfBindings } from "./adapters/edge/cf-env";
 export { CloudflareEnv } from "./adapters/edge/cf-env";
 export { createD1Port, isD1Configured } from "./adapters/edge/d1-db";
+export type { AnyD1Database, DrizzleD1Database } from "./adapters/edge/drizzle";
+export { createD1DrizzleDb, type AnyDrizzleDb } from "./adapters/edge/drizzle";
 export type {
   DurableRealtime,
   DurableSocketLike,
@@ -23,6 +25,7 @@ export {
   createQueuesQueue,
   isQueueBindingConfigured,
 } from "./adapters/edge/queues";
-export { createR2Port, isR2Configured } from "./adapters/edge/r2-objects";
+export type { R2Binding, R2GetResult, R2PortOptions } from "./adapters/edge/r2-objects";
+export { createR2Port, createR2PortFromBinding, isR2Configured, R2Objects } from "./adapters/edge/r2-objects";
 export type { EdgeInfraOptions } from "./runtime/edge";
 export { createEdgeInfra } from "./runtime/edge";

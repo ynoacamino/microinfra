@@ -19,6 +19,17 @@ export function describeQueueContract(name: string, makeQueue: () => QueuePort |
       await queue.stopWorker();
     });
 
+    it("roundtrips an opaque data payload", async () => {
+      const queue = await makeQueue();
+      const jobId = `job-${crypto.randomUUID()}`;
+      expect(await queue.enqueueJob(jobId, "export", '{"email":"a@test.dev"}')).toBe(true);
+      const next = await queue.processNextJob();
+      expect(next?.jobId).toBe(jobId);
+      expect(next?.data).toBe('{"email":"a@test.dev"}');
+      if (next) await queue.ackJob(next.streamId);
+      await queue.stopWorker();
+    });
+
     it("delivers enqueued jobs to a running worker", async () => {
       const queue = await makeQueue();
       const seen: Array<{ jobId: string; jobType: string }> = [];

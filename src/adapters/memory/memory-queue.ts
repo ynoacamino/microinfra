@@ -4,6 +4,7 @@ interface Job {
   jobId: string;
   jobType: string;
   streamId: string;
+  data?: string;
 }
 
 export function createMemoryQueue(): QueuePort {
@@ -23,9 +24,13 @@ export function createMemoryQueue(): QueuePort {
   }
 
   return {
-    enqueueJob: async (jobId, jobType) => {
+    enqueueJob: async (jobId, jobType, data) => {
       counter += 1;
-      pending.push({ jobId, jobType, streamId: `mem-${counter}` });
+      const job: Job = { jobId, jobType, streamId: `mem-${counter}` };
+      if (data !== undefined) {
+        job.data = data;
+      }
+      pending.push(job);
       if (running) await drain();
       return true;
     },

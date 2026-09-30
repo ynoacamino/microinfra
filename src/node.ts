@@ -1,5 +1,10 @@
 export type { BunServerLike, BunSocketLike, BunWsHandler } from "./adapters/node/bun-realtime";
 export { createBunRealtimeHandler, handleBunUpgrade } from "./adapters/node/bun-realtime";
+export type { AnyDrizzleSchema, LibSQLDatabase } from "./adapters/node/drizzle";
+export {
+  createLibsqlDrizzleDb,
+  createLibsqlHttpDrizzleDb,
+} from "./adapters/node/drizzle";
 export { createLibsqlPort, isLibsqlConfigured } from "./adapters/node/libsql-db";
 export { NodeEnv } from "./adapters/node/node-env";
 export { createHttpRedisCache, isRedisConfigured } from "./adapters/node/redis-cache";

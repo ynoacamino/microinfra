@@ -2,6 +2,7 @@ import type { EnvConfig } from "../../ports/config";
 import type { LoggerPort } from "../../ports/logger";
 import type { QueueJob, QueuePort } from "../../ports/queue";
 import { createNoopLogger } from "../memory/loggers";
+import { parseRedisFields, sendRedisCommand, sendRedisPipeline } from "./redis-http";
 
 export interface RedisStreamsOptions {
   stream?: string;
@@ -19,47 +20,23 @@ export function isStreamsConfigured(config: EnvConfig): boolean {
   return Boolean(config.redis.url && config.redis.token);
 }
 
-interface CommandResult {
-  result: unknown;
-}
-
-async function sendCommand(baseUrl: string, token: string, command: unknown[]): Promise<unknown> {
-  const normalized = baseUrl.replace(/\/$/, "");
-  const res = await fetch(`${normalized}/`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify(command),
-  });
-  if (!res.ok) throw new Error(`[queue] Upstash error: ${res.status}`);
-  const body = (await res.json()) as CommandResult;
-  return body.result;
-}
-
-async function sendPipeline(baseUrl: string, token: string, commands: unknown[][]): Promise<unknown[]> {
-  const normalized = baseUrl.replace(/\/$/, "");
-  const res = await fetch(`${normalized}/pipeline`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify(commands),
-  });
-  if (!res.ok) throw new Error(`[queue] Upstash error: ${res.status}`);
-  const body = (await res.json()) as Array<CommandResult>;
-  return body.map((entry) => entry.result);
-}
-
 function parseEntry(entry: unknown): QueueJob | null {
-  if (!Array.isArray(entry)) return null;
-  const [streamId, rawFields] = entry;
-  if (typeof streamId !== "string" || !Array.isArray(rawFields)) return null;
-  const fields: Record<string, string> = {};
-  for (let i = 0; i < rawFields.length; i += 2) {
-    const key = rawFields[i];
-    const value = rawFields[i + 1];
-    if (typeof key !== "string" || value === undefined) continue;
-    fields[key] = String(value);
+  if (!Array.isArray(entry)) {
+    return null;
   }
-  if (!streamId || !fields.jobId || !fields.jobType) return null;
-  return { streamId, jobId: fields.jobId, jobType: fields.jobType };
+  const [streamId, rawFields] = entry;
+  if (typeof streamId !== "string") {
+    return null;
+  }
+  const fields = parseRedisFields(rawFields);
+  if (!streamId || !fields.jobId || !fields.jobType) {
+    return null;
+  }
+  const job: QueueJob = { streamId, jobId: fields.jobId, jobType: fields.jobType };
+  if (fields.data !== undefined) {
+    job.data = fields.data;
+  }
+  return job;
 }
 
 export class RedisStreamsQueue implements QueuePort {
@@ -89,27 +66,22 @@ export class RedisStreamsQueue implements QueuePort {
   private async ensureGroup(): Promise<void> {
     if (this.groupReady) return;
     try {
-      await sendCommand(this.baseUrl, this.token, ["XGROUP", "CREATE", this.stream, this.group, "0", "MKSTREAM"]);
+      await sendRedisCommand(this.baseUrl, this.token, ["XGROUP", "CREATE", this.stream, this.group, "0", "MKSTREAM"]);
     } catch {
       this.logger.debug("Consumer group already exists", { group: this.group });
     }
     this.groupReady = true;
   }
 
-  async enqueueJob(jobId: string, jobType: string): Promise<boolean> {
+  async enqueueJob(jobId: string, jobType: string, data?: string): Promise<boolean> {
     try {
       await this.ensureGroup();
-      await sendCommand(this.baseUrl, this.token, [
-        "XADD",
-        this.stream,
-        "*",
-        "jobId",
-        jobId,
-        "jobType",
-        jobType,
-        "enqueuedAt",
-        Date.now().toString(),
-      ]);
+      const command: string[] = ["XADD", this.stream, "*", "jobId", jobId, "jobType", jobType];
+      if (data !== undefined) {
+        command.push("data", data);
+      }
+      command.push("enqueuedAt", Date.now().toString());
+      await sendRedisCommand(this.baseUrl, this.token, command);
       return true;
     } catch (error) {
       this.logger.error("Failed to enqueue job", { jobId, jobType, error: String(error) });
@@ -119,7 +91,7 @@ export class RedisStreamsQueue implements QueuePort {
 
   async processNextJob(): Promise<QueueJob | null> {
     try {
-      const result = await sendCommand(this.baseUrl, this.token, [
+      const result = await sendRedisCommand(this.baseUrl, this.token, [
         "XREADGROUP",
         "GROUP",
         this.group,
@@ -141,7 +113,7 @@ export class RedisStreamsQueue implements QueuePort {
   }
 
   async ackJob(streamId: string): Promise<void> {
-    await sendPipeline(this.baseUrl, this.token, [
+    await sendRedisPipeline(this.baseUrl, this.token, [
       ["XACK", this.stream, this.group, streamId],
       ["XDEL", this.stream, streamId],
     ]);
@@ -152,7 +124,7 @@ export class RedisStreamsQueue implements QueuePort {
     try {
       let cursor: unknown = "0-0";
       for (let i = 0; i < 10; i++) {
-        const result = await sendCommand(this.baseUrl, this.token, [
+        const result = await sendRedisCommand(this.baseUrl, this.token, [
           "XAUTOCLAIM",
           this.stream,
           this.group,

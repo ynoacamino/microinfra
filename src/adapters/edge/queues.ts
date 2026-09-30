@@ -3,6 +3,8 @@ import type { QueuePort } from "../../ports/queue";
 export interface QueueJobMessage {
   jobId: string;
   jobType: string;
+  /** Optional opaque payload (JSON recommended). */
+  data?: string;
 }
 
 export interface EdgeQueueBinding {
@@ -26,8 +28,12 @@ export function isQueueBindingConfigured(binding?: { send?: unknown }): boolean 
 
 export function createQueuesQueue(binding: EdgeQueueBinding): QueuePort {
   return {
-    enqueueJob: async (jobId, jobType) => {
-      await binding.send({ jobId, jobType });
+    enqueueJob: async (jobId, jobType, data) => {
+      const message: QueueJobMessage = { jobId, jobType };
+      if (data !== undefined) {
+        message.data = data;
+      }
+      await binding.send(message);
       return true;
     },
     processNextJob: async () => null,

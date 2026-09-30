@@ -1,9 +1,14 @@
+import type { QueueJob, QueuePort } from "../ports/queue";
 import type { RuntimeEnv } from "../core/types";
 
-export type JobHandler = (jobId: string) => Promise<void>;
+export type { QueueJob };
+export type JobHandler = (job: QueueJob) => Promise<void>;
 
-export async function runWorker(rt: RuntimeEnv, handlers: Record<string, JobHandler>): Promise<() => Promise<void>> {
-  const queue = rt.queue;
+export async function runWorker(
+  rt: RuntimeEnv,
+  handlers: Record<string, JobHandler>,
+): Promise<() => Promise<void>> {
+  const queue: QueuePort | undefined = rt.queue;
   if (!queue) {
     throw new Error("[worker] No queue configured in RuntimeEnv");
   }
@@ -13,7 +18,7 @@ export async function runWorker(rt: RuntimeEnv, handlers: Record<string, JobHand
       rt.logger.error("No handler registered for job type", { jobId: job.jobId, jobType: job.jobType });
       throw new Error(`[worker] Unhandled job type: ${job.jobType}`);
     }
-    await handler(job.jobId);
+    await handler(job);
   });
   return () => queue.stopWorker();
 }

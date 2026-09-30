@@ -1,6 +1,6 @@
 {
   "name": "microinfra",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Agnostic infrastructure engine with typed ports, pluggable adapters for edge (Cloudflare) and on-premise (Docker Compose), and composable runtime.",
   "license": "MIT",
   "type": "module",
@@ -30,7 +30,6 @@
   "devDependencies": {
     "@biomejs/biome": "2.5.4",
     "@cloudflare/vitest-pool-workers": "^0.22.0",
-    "@libsql/client": "^0.18.0",
     "@typescript/native-preview": "7.0.0-dev.20260707.2",
     "@vitest/coverage-v8": "^4.1.11",
     "testcontainers": "^12.2.0",
@@ -40,6 +39,8 @@
     "zod": "^4.3.6"
   },
   "dependencies": {
-    "aws4fetch": "^1.0.20"
+    "@libsql/client": "^0.18.0",
+    "aws4fetch": "^1.0.20",
+    "drizzle-orm": "^0.45.3"
   }
 }

@@ -7,8 +7,8 @@ describe("runWorker", () => {
     const rt = createTestInfra();
     const seen: string[] = [];
     const stop = await runWorker(rt, {
-      export: async (jobId) => void seen.push(`export:${jobId}`),
-      import: async (jobId) => void seen.push(`import:${jobId}`),
+      export: async (job) => void seen.push(`export:${job.jobId}`),
+      import: async (job) => void seen.push(`import:${job.jobId}`),
     });
     await rt.queue?.enqueueJob("j1", "export");
     await rt.queue?.enqueueJob("j2", "import");
