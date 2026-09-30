@@ -30,6 +30,34 @@ describe("memory-pubsub unsubscribe", () => {
   });
 });
 
+describe("memory-pubsub close", () => {
+  it("close() ends the subscription even with a pending next()", async () => {
+    const pubsub = createMemoryPubSub();
+    const sub = pubsub.subscribe<string>("ch") as AsyncIterable<string> & {
+      close(): void | Promise<void>;
+    };
+    const it = sub[Symbol.asyncIterator]();
+    const pending = it.next();
+    sub.close();
+    const done = await pending;
+    expect(done.done).toBe(true);
+    await it.return?.(undefined);
+    pubsub.publish("ch", "late");
+  });
+
+  it("close() after queued messages drains then ends", async () => {
+    const pubsub = createMemoryPubSub();
+    const sub = pubsub.subscribe<string>("ch") as AsyncIterable<string> & {
+      close(): void | Promise<void>;
+    };
+    pubsub.publish("ch", "1");
+    const it = sub[Symbol.asyncIterator]();
+    expect((await it.next()).value).toBe("1");
+    sub.close();
+    expect((await it.next()).done).toBe(true);
+  });
+});
+
 describe("console logger levels", () => {
   it("debug/warn never throw", () => {
     const log = createConsoleLogger("x");

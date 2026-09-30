@@ -128,6 +128,95 @@ describe("RedisStreamsPubSub", () => {
     expect(bodies.some((command) => command[0] === "XREAD")).toBe(true);
   });
 
+  it("falls back to zero cursor when the latest id lookup fails", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: unknown, init: { body: string }) => {
+        const command = JSON.parse(init.body) as unknown[];
+        if (command[0] === "XREVRANGE") {
+          throw new Error("boom");
+        }
+        return jsonResponse([["s", [["7-0", ["data", JSON.stringify({ data: "recovered" })]]]]]);
+      }),
+    );
+    const pubsub = createRedisStreamsPubSub(testConfig(), { pollIntervalMs: 10 });
+    const received = await collect(pubsub.subscribe<string>("chat"), 1);
+    expect(received).toEqual(["recovered"]);
+  });
+
+  it("ignores unserializable payloads without throwing", async () => {
+    const calls: unknown[][] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: unknown, init: { body: string }) => {
+        calls.push(JSON.parse(init.body) as unknown[]);
+        return jsonResponse("ok");
+      }),
+    );
+    const pubsub = createRedisStreamsPubSub(testConfig(), { pollIntervalMs: 10 });
+    const circular: Record<string, unknown> = {};
+    circular.self = circular;
+    expect(() => pubsub.publish("chat", circular)).not.toThrow();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(calls).toHaveLength(0);
+  });
+
+  it("survives publish and poll failures", async () => {
+    let polls = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: unknown, init: { body: string }) => {
+        if (String(url).endsWith("/pipeline")) {
+          throw new Error("publish failed");
+        }
+        const command = JSON.parse(init.body) as unknown[];
+        if (command[0] === "XREVRANGE") {
+          return jsonResponse([]);
+        }
+        polls += 1;
+        if (polls === 1) {
+          throw new Error("poll failed");
+        }
+        return jsonResponse([["s", [["9-0", ["data", JSON.stringify({ data: "late" })]]]]]);
+      }),
+    );
+    const pubsub = createRedisStreamsPubSub(testConfig(), { pollIntervalMs: 10 });
+    expect(() => pubsub.publish("chat", "late")).not.toThrow();
+    const sub = pubsub.subscribe<string>("chat") as AsyncIterable<string> & {
+      close(): void | Promise<void>;
+    };
+    const iterator = sub[Symbol.asyncIterator]();
+    const first = await iterator.next();
+    expect(first.value).toBe("late");
+    sub.close();
+    await iterator.return?.(undefined);
+  });
+
+  it("yields undefined for entries without data and closes promptly", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: unknown, init: { body: string }) => {
+        const command = JSON.parse(init.body) as unknown[];
+        if (command[0] === "XREVRANGE") {
+          return jsonResponse([]);
+        }
+        return jsonResponse([["s", [["3-0", ["mid", "m1"]]]]]);
+      }),
+    );
+    const pubsub = createRedisStreamsPubSub(testConfig(), { pollIntervalMs: 10 });
+    const sub = pubsub.subscribe<unknown>("chat") as AsyncIterable<unknown> & {
+      close(): void | Promise<void>;
+    };
+    const iterator = sub[Symbol.asyncIterator]();
+    const first = await iterator.next();
+    expect(first.done).toBe(false);
+    expect(first.value).toBeUndefined();
+    const started = Date.now();
+    sub.close();
+    await iterator.return?.(undefined);
+    expect(Date.now() - started).toBeLessThan(5000);
+  });
+
   it("delivers raw strings when the payload is not JSON", async () => {
     vi.stubGlobal(
       "fetch",
