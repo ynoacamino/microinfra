@@ -185,7 +185,7 @@ export class RedisStreamsPubSub implements PubSubPort {
     });
   }
 
-  subscribe<T = unknown>(channel: string): AsyncIterable<T> & { close(): void } {
+  subscribe<T = unknown>(channel: string): AsyncIterable<T> & { close(): void | Promise<void> } {
     const self = this;
     const stream = this.streamFor(channel);
     const subscribedAt = Date.now();

@@ -19,12 +19,19 @@ export function createMemoryPubSub(): PubSubPort {
         channels.set(channel, set);
       }
       set.add(push);
-      return (async function* () {
+      let closed = false;
+      const iterable = (async function* () {
         try {
           let index = 0;
           for (;;) {
+            if (closed) {
+              break;
+            }
             while (index < queue.length) {
               yield queue[index++] as never;
+            }
+            if (closed) {
+              break;
             }
             await new Promise<void>((resolve) => waiters.push(resolve));
           }
@@ -32,6 +39,17 @@ export function createMemoryPubSub(): PubSubPort {
           set?.delete(push);
         }
       })();
+      return {
+        [Symbol.asyncIterator]() {
+          return iterable[Symbol.asyncIterator]();
+        },
+        close() {
+          closed = true;
+          for (const wake of waiters.splice(0)) {
+            wake();
+          }
+        },
+      };
     },
   };
 }

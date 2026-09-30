@@ -28,7 +28,7 @@ async function collect<T>(iterable: AsyncIterable<T>, count: number, timeoutMs =
       }
     }
   } finally {
-    (iterable as { close?: () => void }).close?.();
+    (iterable as { close?: () => void | Promise<void> }).close?.();
     await iterator.return?.(undefined);
   }
   return collected;
