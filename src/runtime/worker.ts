@@ -1,13 +1,10 @@
-import type { QueueJob, QueuePort } from "../ports/queue";
 import type { RuntimeEnv } from "../core/types";
+import type { QueueJob, QueuePort } from "../ports/queue";
 
 export type { QueueJob };
 export type JobHandler = (job: QueueJob) => Promise<void>;
 
-export async function runWorker(
-  rt: RuntimeEnv,
-  handlers: Record<string, JobHandler>,
-): Promise<() => Promise<void>> {
+export async function runWorker(rt: RuntimeEnv, handlers: Record<string, JobHandler>): Promise<() => Promise<void>> {
   const queue: QueuePort | undefined = rt.queue;
   if (!queue) {
     throw new Error("[worker] No queue configured in RuntimeEnv");

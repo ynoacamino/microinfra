@@ -6,11 +6,7 @@ function normalizeUrl(baseUrl: string): string {
   return baseUrl.replace(/\/$/, "");
 }
 
-export async function sendRedisCommand(
-  baseUrl: string,
-  token: string,
-  command: unknown[],
-): Promise<unknown> {
+export async function sendRedisCommand(baseUrl: string, token: string, command: unknown[]): Promise<unknown> {
   const res = await fetch(`${normalizeUrl(baseUrl)}/`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
@@ -23,11 +19,7 @@ export async function sendRedisCommand(
   return body.result;
 }
 
-export async function sendRedisPipeline(
-  baseUrl: string,
-  token: string,
-  commands: unknown[][],
-): Promise<unknown[]> {
+export async function sendRedisPipeline(baseUrl: string, token: string, commands: unknown[][]): Promise<unknown[]> {
   const res = await fetch(`${normalizeUrl(baseUrl)}/pipeline`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },

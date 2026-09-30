@@ -105,14 +105,7 @@ export class RedisStreamsPubSub implements PubSubPort {
 
   private async latestId(stream: string): Promise<string> {
     try {
-      const result = await sendRedisCommand(this.baseUrl, this.token, [
-        "XREVRANGE",
-        stream,
-        "+",
-        "-",
-        "COUNT",
-        "1",
-      ]);
+      const result = await sendRedisCommand(this.baseUrl, this.token, ["XREVRANGE", stream, "+", "-", "COUNT", "1"]);
       if (Array.isArray(result) && result.length > 0) {
         const first = result[0];
         if (Array.isArray(first) && typeof first[0] === "string") {

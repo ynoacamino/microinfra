@@ -1,11 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 vi.setConfig({ testTimeout: 15_000 });
+
 import { createMapEnv } from "../../../adapters/memory/map-env";
-import {
-  createRedisStreamsPubSub,
-  type RedisPubSubOptions,
-} from "../../../adapters/node/redis-pubsub";
+import { createRedisStreamsPubSub, type RedisPubSubOptions } from "../../../adapters/node/redis-pubsub";
 import { createEnvConfig } from "../../../schema/env-schema";
 import { describePubSubContract } from "../../contract/pubsub.contract";
 import { type RedisStack, startRedisStack } from "./containers";

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createMapEnv } from "../memory/map-env";
 import { createEnvConfig } from "../../schema/env-schema";
+import { createMapEnv } from "../memory/map-env";
 import { createRedisStreamsPubSub } from "./redis-pubsub";
 
 function testConfig() {
@@ -103,7 +103,7 @@ describe("RedisStreamsPubSub", () => {
     const bodies: unknown[][] = [];
     vi.stubGlobal(
       "fetch",
-      vi.fn(async (url: unknown, init: { body: string; }) => {
+      vi.fn(async (url: unknown, init: { body: string }) => {
         const raw = String(url);
         const command = JSON.parse(init.body) as unknown[];
         bodies.push(command);

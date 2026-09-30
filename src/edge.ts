@@ -2,7 +2,7 @@ export type { CfBindings } from "./adapters/edge/cf-env";
 export { CloudflareEnv } from "./adapters/edge/cf-env";
 export { createD1Port, isD1Configured } from "./adapters/edge/d1-db";
 export type { AnyD1Database, DrizzleD1Database } from "./adapters/edge/drizzle";
-export { createD1DrizzleDb, type AnyDrizzleDb } from "./adapters/edge/drizzle";
+export { type AnyDrizzleDb, createD1DrizzleDb } from "./adapters/edge/drizzle";
 export type {
   DurableRealtime,
   DurableSocketLike,
