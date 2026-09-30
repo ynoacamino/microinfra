@@ -1,0 +1,45 @@
+{
+  "name": "microinfra",
+  "version": "0.1.0",
+  "description": "Agnostic infrastructure engine with typed ports, pluggable adapters for edge (Cloudflare) and on-premise (Docker Compose), and composable runtime.",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./edge": "./src/edge.ts",
+    "./node": "./src/node.ts",
+    "./memory": "./src/memory.ts",
+    "./package.json": "./package.json"
+  },
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsdown src/index.ts src/edge.ts src/node.ts src/memory.ts --dts --format esm --out-dir dist",
+    "typecheck": "tsgo --noEmit",
+    "typecheck:build": "tsgo --noEmit -p tsconfig.build.json",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:integration": "TESTCONTAINERS_RYUK_DISABLED=true vitest run --config vitest.integration.ts",
+    "test:edge": "vitest run --config vitest.workers.ts"
+  },
+  "peerDependencies": {
+    "zod": "^4"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.4",
+    "@cloudflare/vitest-pool-workers": "^0.22.0",
+    "@libsql/client": "^0.18.0",
+    "@typescript/native-preview": "7.0.0-dev.20260707.2",
+    "@vitest/coverage-v8": "^4.1.11",
+    "testcontainers": "^12.2.0",
+    "tsdown": "^0.23.0",
+    "typescript": "^5.9.2",
+    "vitest": "^4.1.5",
+    "zod": "^4.3.6"
+  },
+  "dependencies": {
+    "aws4fetch": "^1.0.20"
+  }
+}

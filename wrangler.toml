@@ -1,0 +1,16 @@
+name = "microinfra-edge-tests"
+main = "src/tests/integration/edge/worker.ts"
+compatibility_date = "2025-08-01"
+
+[[kv_namespaces]]
+binding = "KV"
+id = "test-kv-namespace-id"
+
+[[r2_buckets]]
+binding = "MY_BUCKET"
+bucket_name = "test-bucket"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "test-db"
+database_id = "00000000-0000-0000-0000-000000000000"
