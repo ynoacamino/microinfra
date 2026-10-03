@@ -70,6 +70,19 @@ const rt = createNodeInfra({ vars: process.env as Record<string, string>, dbClie
 // S3 configured -> S3 objects, else inject objectPort or memory
 ```
 
+### App runtime: database without drizzle constructors
+
+```ts
+import { createAppRuntime } from "microinfra/node";
+import { relations } from "./db/schema"; // tables + defineRelations
+
+const rt = createAppRuntime(process.env, { relations });
+const db = rt.db.orm; // LibSQLDatabase<typeof relations>, driver picked by URL scheme
+// DATABASE_URL http(s): -> libsql-server/Turso, file: -> embedded (forbidFileDb by default)
+```
+
+The app only declares tables + `defineRelations`; microinfra picks the driver (embedded vs http vs D1 on edge via `createAppRuntimeEdge`). Pin the same `drizzle-orm` version as microinfra (`1.0.0-rc.4`) so schema types match the built client.
+
 ### Background jobs
 
 ```ts
