@@ -6,6 +6,7 @@ import { createMapEnv } from "../adapters/memory/map-env";
 import { createMemoryObjects } from "../adapters/memory/memory-objects";
 import { createMemoryPubSub } from "../adapters/memory/memory-pubsub";
 import { createMemoryRealtime } from "../adapters/memory/memory-realtime";
+import { RedisStreamsPubSub } from "../adapters/node/redis-pubsub";
 import { createEnvConfig } from "../schema/env-schema";
 import { createEdgeInfra } from "./edge";
 import { createNodeInfra } from "./node";
@@ -53,6 +54,16 @@ describe("createEdgeInfra", () => {
     expect(rt.mode).toBe("edge");
     await rt.cache.put("x", "1");
     expect(await rt.cache.get("x")).toBe("1");
+  });
+
+  it("wires redis streams pubsub when redis is configured, memory otherwise", () => {
+    const config = createEnvConfig(
+      createMapEnv({ UPSTASH_REDIS_REST_URL: "http://redis.test", UPSTASH_REDIS_REST_TOKEN: "token" }),
+    );
+    const redis = createNodeInfra({ vars: {}, dbClient: { tag: "libsql" }, config });
+    expect(redis.pubsub).toBeInstanceOf(RedisStreamsPubSub);
+    const memory = createNodeInfra({ vars: {}, dbClient: { tag: "libsql" } });
+    expect(memory.pubsub).not.toBeInstanceOf(RedisStreamsPubSub);
   });
 
   it("wires redis cache and streams queue when node config has redis", async () => {

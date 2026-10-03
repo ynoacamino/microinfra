@@ -9,6 +9,7 @@ import { createUuidIds } from "../adapters/memory/uuid-ids";
 import { createLibsqlPort } from "../adapters/node/libsql-db";
 import { NodeEnv } from "../adapters/node/node-env";
 import { createHttpRedisCache, isRedisConfigured } from "../adapters/node/redis-cache";
+import { createRedisStreamsPubSub } from "../adapters/node/redis-pubsub";
 import { createRedisStreamsQueue, isStreamsConfigured } from "../adapters/node/redis-streams";
 import { createInfra } from "../core/registry";
 import type { RuntimeEnv } from "../core/types";
@@ -46,7 +47,8 @@ export function createNodeInfra<TRaw = unknown, TOrm = unknown>(
     cache,
     objects,
     queue: isStreamsConfigured(config) ? createRedisStreamsQueue(config) : createMemoryQueue(),
-    pubsub: createMemoryPubSub(),
+    // Redis configured -> streams pubsub (multi-instance fan-out), else memory (single process).
+    pubsub: isStreamsConfigured(config) ? createRedisStreamsPubSub(config) : createMemoryPubSub(),
     realtime: opts.realtimePort ?? createMemoryRealtime(),
   });
 }
