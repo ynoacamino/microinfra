@@ -1,9 +1,11 @@
 import type { RuntimeEnv } from "./types";
 
-export interface CreateInfraOptions<TDb = unknown> extends RuntimeEnv<TDb> {}
+export interface CreateInfraOptions<TRaw = unknown, TOrm = unknown> extends RuntimeEnv<TRaw, TOrm> {}
 
-export function createInfra<TDb = unknown>(options: CreateInfraOptions<TDb>): RuntimeEnv<TDb> {
-  const runtime: RuntimeEnv<TDb> = { ...options };
+export function createInfra<TRaw = unknown, TOrm = unknown>(
+  options: CreateInfraOptions<TRaw, TOrm>,
+): RuntimeEnv<TRaw, TOrm> {
+  const runtime: RuntimeEnv<TRaw, TOrm> = { ...options };
 
   if (options.mode === "node" && !runtime.close) {
     const dbClose = options.db.close;

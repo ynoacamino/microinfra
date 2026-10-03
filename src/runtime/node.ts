@@ -17,20 +17,23 @@ import type { ObjectPort } from "../ports/object-storage";
 import type { RealtimePort } from "../ports/realtime";
 import { createEnvConfig } from "../schema/env-schema";
 
-export interface NodeInfraOptions<TDb = unknown> {
+export interface NodeInfraOptions<TRaw = unknown, TOrm = unknown> {
   vars?: Record<string, string | undefined>;
-  dbClient: TDb;
+  dbClient: TRaw;
   dbClose?: () => Promise<void>;
+  dbOrm?: TOrm;
   objectPort?: ObjectPort;
   realtimePort?: RealtimePort;
   config?: EnvConfig;
 }
 
-export function createNodeInfra<TDb = unknown>(opts: NodeInfraOptions<TDb>): RuntimeEnv<TDb> {
+export function createNodeInfra<TRaw = unknown, TOrm = unknown>(
+  opts: NodeInfraOptions<TRaw, TOrm>,
+): RuntimeEnv<TRaw, TOrm> {
   const env = new NodeEnv(opts.vars);
   const config = opts.config ?? createEnvConfig(env);
   const cache = isRedisConfigured(config) ? createHttpRedisCache(config) : createMemoryCache();
-  const db = createLibsqlPort(opts.dbClient, opts.dbClose);
+  const db = createLibsqlPort<TRaw, TOrm>(opts.dbClient, opts.dbClose, opts.dbOrm);
   const objects = opts.objectPort ?? createMemoryObjects();
   return createInfra({
     mode: "node",

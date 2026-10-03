@@ -17,5 +17,7 @@ export {
 export { createS3Port, isS3Configured } from "./adapters/node/s3-objects";
 export type { WsServerLike, WsSocketLike } from "./adapters/node/ws-realtime";
 export { attachWsRealtime } from "./adapters/node/ws-realtime";
+export type { AppRuntimeOptions, NodeDbInit } from "./runtime/app-runtime";
+export { createAppRuntime } from "./runtime/app-runtime";
 export type { NodeInfraOptions } from "./runtime/node";
 export { createNodeInfra } from "./runtime/node";

@@ -8,6 +8,7 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(7000),
 
   DATABASE_URL: z.string().optional(),
+  DATABASE_AUTH_TOKEN: z.string().optional(),
 
   S3_ACCESS_KEY_ID: z.string().default(""),
   S3_SECRET_ACCESS_KEY: z.string().default(""),
@@ -58,7 +59,7 @@ export function createEnvConfig(env: EnvPort): EnvConfig {
     port: data.PORT,
     corsOrigins: parseOrigins(data.CORS_ORIGINS),
     trustedOrigins: parseOrigins(data.TRUSTED_ORIGINS),
-    database: { url: data.DATABASE_URL },
+    database: { url: data.DATABASE_URL, authToken: data.DATABASE_AUTH_TOKEN },
     s3: {
       accessKeyId: data.S3_ACCESS_KEY_ID,
       secretAccessKey: data.S3_SECRET_ACCESS_KEY,

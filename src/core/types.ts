@@ -12,14 +12,14 @@ import type { RealtimePort } from "../ports/realtime";
 
 export type RuntimeMode = "edge" | "node" | "test";
 
-export interface RuntimeEnv<TDb = unknown> {
+export interface RuntimeEnv<TRaw = unknown, TOrm = unknown> {
   mode: RuntimeMode;
   env: EnvPort;
   config: EnvConfig;
   logger: LoggerPort;
   clock: ClockPort;
   ids: IdsPort;
-  db: DatabasePort<TDb>;
+  db: DatabasePort<TRaw, TOrm>;
   cache: CachePort;
   objects: ObjectPort;
   queue?: QueuePort;

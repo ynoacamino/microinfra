@@ -20,10 +20,12 @@ import type { QueuePort } from "../ports/queue";
 import type { RealtimePort } from "../ports/realtime";
 import { createEnvConfig } from "../schema/env-schema";
 
-export interface EdgeInfraOptions<TDb = unknown> {
+export interface EdgeInfraOptions<TRaw = unknown, TOrm = unknown> {
   bindings?: CfBindings;
-  dbClient: TDb;
+  vars?: Record<string, string | undefined>;
+  dbClient: TRaw;
   dbClose?: () => Promise<void>;
+  dbOrm?: TOrm;
   kvBinding?: KvBinding;
   objectPort?: ObjectPort;
   r2Binding?: R2Binding;
@@ -57,8 +59,10 @@ function isQueueBindingLike(value: unknown): value is EdgeQueueBinding {
   return typeof (value as Record<string, unknown>).send === "function";
 }
 
-export function createEdgeInfra<TDb = unknown>(opts: EdgeInfraOptions<TDb>): RuntimeEnv<TDb> {
-  const env = new CloudflareEnv(opts.bindings);
+export function createEdgeInfra<TRaw = unknown, TOrm = unknown>(
+  opts: EdgeInfraOptions<TRaw, TOrm>,
+): RuntimeEnv<TRaw, TOrm> {
+  const env = new CloudflareEnv(opts.bindings, opts.vars);
   const config = opts.config ?? createEnvConfig(env);
 
   let kvBinding = opts.kvBinding;
@@ -93,7 +97,7 @@ export function createEdgeInfra<TDb = unknown>(opts: EdgeInfraOptions<TDb>): Run
     }
   }
 
-  const db = createD1Port(opts.dbClient, opts.dbClose);
+  const db = createD1Port<TRaw, TOrm>(opts.dbClient, opts.dbClose, opts.dbOrm);
   return createInfra({
     mode: "edge",
     env,

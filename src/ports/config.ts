@@ -4,7 +4,7 @@ export interface EnvConfig {
   port: number;
   corsOrigins: string[];
   trustedOrigins: string[];
-  database: { url: string | undefined };
+  database: { url: string | undefined; authToken: string | undefined };
   s3: {
     accessKeyId: string;
     secretAccessKey: string;
