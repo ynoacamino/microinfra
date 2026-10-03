@@ -37,3 +37,5 @@ export { type JobHandler, runWorker } from "./runtime/worker";
 export { createEnvConfig } from "./schema/env-schema";
 export type { ServiceContext, ServiceUser } from "./service/context";
 export { contextFromRuntime, sessionUser, syntheticRequest } from "./service/context";
+export type { CreateGraphqlWsOptions, GraphqlWsHandler, GraphqlWsPeer } from "./service/graphql-ws";
+export { createGraphqlWs } from "./service/graphql-ws";

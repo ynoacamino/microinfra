@@ -95,8 +95,30 @@ const stop = await runWorker(rt, {
 await stop();
 ```
 
-### Realtime: one event object, every transport
+### GraphQL over WebSocket (transport-agnostic)
 
+```ts
+import { createGraphqlWs } from "microinfra";
+
+const graphqlWs = createGraphqlWs({ schema, getContext: (peer) => buildContext(peer) });
+
+// adapt any transport to the { id, send, context } peer surface:
+open: (peerId) => graphqlWs.open(peerId),
+message: (peer, text) => graphqlWs.message({ id: peer.id, send: (t) => peer.send(t), context: peer.context }, text),
+close: (peerId) => graphqlWs.close(peerId),
+```
+
+### Cloudflare entrypoints (no framework import)
+
+```ts
+import { cfEnv, cfVars, createBatchRunner, stashDoEnv } from "microinfra/edge";
+
+stashDoEnv(doInitPayload); // inside your Durable Object init
+const runQueue = createBatchRunner({ createRuntime, createHandlers });
+await runQueue({ batch }); // in your queue consumer
+```
+
+### Realtime: one event object, every transport
 ```ts
 import { createMemoryRealtime } from "microinfra";
 import { attachWsRealtime } from "microinfra/node";
