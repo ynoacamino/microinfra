@@ -55,3 +55,57 @@ jobs:
 
       - name: Build
         run: bun run build
+
+  integration:
+    name: integration (testcontainers)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.0"
+
+      - name: Restore Bun install cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-1.4.0-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-1.4.0-
+
+      - name: Install
+        run: bun install --frozen-lockfile
+
+      - name: Integration
+        run: bun run test:integration
+
+  edge:
+    name: edge (miniflare workerd)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.0"
+
+      - name: Restore Bun install cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-1.4.0-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-1.4.0-
+
+      - name: Install
+        run: bun install --frozen-lockfile
+
+      - name: Edge
+        run: bun run test:edge

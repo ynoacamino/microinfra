@@ -8,6 +8,8 @@ export {
 export { createLibsqlPort, isLibsqlConfigured } from "./adapters/node/libsql-db";
 export { NodeEnv } from "./adapters/node/node-env";
 export { createHttpRedisCache, isRedisConfigured } from "./adapters/node/redis-cache";
+export type { RedisPubSubOptions } from "./adapters/node/redis-pubsub";
+export { createRedisStreamsPubSub, RedisStreamsPubSub } from "./adapters/node/redis-pubsub";
 export type { RedisStreamsOptions } from "./adapters/node/redis-streams";
 export {
   createRedisStreamsQueue,
