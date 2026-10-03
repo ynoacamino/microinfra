@@ -5,12 +5,14 @@ export function isLibsqlConfigured(config: EnvConfig): boolean {
   return Boolean(config.database.url);
 }
 
-export function createLibsqlPort<TClient = unknown>(
-  client: TClient,
+export function createLibsqlPort<TRaw = unknown, TOrm = unknown>(
+  client: TRaw,
   close?: () => Promise<void>,
-): DatabasePort<TClient> {
+  orm?: TOrm,
+): DatabasePort<TRaw, TOrm> {
   return {
     client,
+    orm,
     close,
   };
 }

@@ -27,5 +27,7 @@ export {
 } from "./adapters/edge/queues";
 export type { R2Binding, R2GetResult, R2PortOptions } from "./adapters/edge/r2-objects";
 export { createR2Port, createR2PortFromBinding, isR2Configured, R2Objects } from "./adapters/edge/r2-objects";
+export type { AppRuntimeEdgeOptions } from "./runtime/app-runtime-edge";
+export { createAppRuntimeEdge } from "./runtime/app-runtime-edge";
 export type { EdgeInfraOptions } from "./runtime/edge";
 export { createEdgeInfra } from "./runtime/edge";
