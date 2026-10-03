@@ -1,6 +1,6 @@
 {
   "name": "microinfra",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Agnostic infrastructure engine with typed ports, pluggable adapters for edge (Cloudflare) and on-premise (Docker Compose), and composable runtime.",
   "license": "MIT",
   "type": "module",
@@ -41,6 +41,6 @@
   "dependencies": {
     "@libsql/client": "^0.18.0",
     "aws4fetch": "^1.0.20",
-    "drizzle-orm": "^0.45.3"
+    "drizzle-orm": "1.0.0-rc.4"
   }
 }

@@ -1,5 +1,9 @@
 import { type Client, createClient } from "@libsql/client";
+import type { Client as HttpClient } from "@libsql/client/http";
+import type { AnyRelations, EmptyRelations } from "drizzle-orm";
+import type { LibSQLDatabase } from "drizzle-orm/libsql";
 import { createMemoryObjects } from "../adapters/memory/memory-objects";
+import { createLibsqlDrizzleDb, createLibsqlHttpDrizzleDb } from "../adapters/node/drizzle";
 import { NodeEnv } from "../adapters/node/node-env";
 import { createS3Port, isS3Configured } from "../adapters/node/s3-objects";
 import type { RuntimeEnv } from "../core/types";
@@ -8,16 +12,13 @@ import type { ObjectPort } from "../ports/object-storage";
 import { createEnvConfig } from "../schema/env-schema";
 import { createNodeInfra } from "./node";
 
-export interface NodeDbInit {
-  /** Raw libsql client built from DATABASE_URL (works for file:, libsql: and http(s):). */
-  client: Client;
-  /** True when the URL is remote (http(s):/libsql:); false for embedded file:. */
-  remote: boolean;
-}
-
-export interface AppRuntimeOptions<TOrm = unknown> {
-  /** Builds the app ORM (any Drizzle version) over the raw client. Runs once per process. */
-  createDb: (init: NodeDbInit) => TOrm;
+export interface AppRuntimeOptions<TRelations extends AnyRelations = EmptyRelations> {
+  /**
+   * Relations built with drizzle-orm `defineRelations` (tables included).
+   * Optional — defaults to no relations. microinfra picks the driver
+   * (embedded vs http) by URL scheme, so callers never touch drizzle constructors.
+   */
+  relations?: TRelations;
   /** "auto" (default): S3 when S3 env is configured, memory otherwise. Pass a port to force one. */
   objects?: "auto" | ObjectPort;
   /** Reject file: DATABASE_URL with a clear error. Default true. */
@@ -41,13 +42,13 @@ function resolveDatabaseUrl(config: EnvConfig, forbidFileDb: boolean): string {
 
 /**
  * One-line node runtime: parses env, opens the libsql client (branching by
- * URL scheme), builds the app ORM via `createDb`, and wires cache/queue/
+ * URL scheme), builds Drizzle with the app relations, and wires cache/queue/
  * pubsub/objects with the standard fallbacks (memory unless Redis/S3 configured).
  */
-export function createAppRuntime<TOrm = unknown>(
+export function createAppRuntime<TRelations extends AnyRelations = EmptyRelations>(
   vars: Record<string, string | undefined> | undefined,
-  opts: AppRuntimeOptions<TOrm>,
-): RuntimeEnv<Client, TOrm> {
+  opts: AppRuntimeOptions<TRelations> = {},
+): RuntimeEnv<Client, LibSQLDatabase<TRelations>> {
   const env = new NodeEnv(vars);
   const config = opts.config ?? createEnvConfig(env);
   const url = resolveDatabaseUrl(config, opts.forbidFileDb ?? true);
@@ -55,7 +56,9 @@ export function createAppRuntime<TOrm = unknown>(
   const client = createClient(
     remote && config.database.authToken ? { url, authToken: config.database.authToken } : { url },
   );
-  const orm = opts.createDb({ client, remote });
+  const orm = remote
+    ? createLibsqlHttpDrizzleDb<TRelations>(client as HttpClient, opts.relations)
+    : createLibsqlDrizzleDb<TRelations>(client, opts.relations);
   const objects =
     opts.objects === undefined || opts.objects === "auto"
       ? isS3Configured(config)

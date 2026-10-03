@@ -1,18 +1,18 @@
+import type { AnyRelations, EmptyRelations } from "drizzle-orm";
 import { type AnyD1Database, type DrizzleD1Database, drizzle as drizzleD1 } from "drizzle-orm/d1";
 import type { LibSQLDatabase } from "drizzle-orm/libsql";
-import type { AnyDrizzleSchema } from "../node/drizzle";
 
-export type { AnyD1Database, DrizzleD1Database };
+export type { AnyD1Database, AnyRelations, DrizzleD1Database, EmptyRelations };
 
-/** Drizzle over a D1 database binding. Shares the SQLite dialect (and schema) with libsql. */
-export function createD1DrizzleDb<TSchema extends AnyDrizzleSchema>(
+/** Drizzle over a D1 database binding. Shares the SQLite dialect (and relations) with libsql. */
+export function createD1DrizzleDb<TRelations extends AnyRelations = EmptyRelations>(
   binding: AnyD1Database,
-  schema: TSchema,
-): DrizzleD1Database<TSchema> {
-  return drizzleD1(binding, { schema });
+  relations?: TRelations,
+): DrizzleD1Database<TRelations> {
+  return drizzleD1<TRelations>(binding, { relations });
 }
 
 /** Union of every drizzle client microinfra can build. Apps type their db port with this. */
-export type AnyDrizzleDb<TSchema extends AnyDrizzleSchema = AnyDrizzleSchema> =
-  | LibSQLDatabase<TSchema>
-  | DrizzleD1Database<TSchema>;
+export type AnyDrizzleDb<TRelations extends AnyRelations = EmptyRelations> =
+  | LibSQLDatabase<TRelations>
+  | DrizzleD1Database<TRelations>;
