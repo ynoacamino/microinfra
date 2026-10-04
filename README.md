@@ -1,180 +1,240 @@
 # microinfra
 
-[![CI](https://github.com/ynoacamino/microinfra/actions/workflows/ci.yml/badge.svg)](https://github.com/ynoacamino/microinfra/actions/workflows/ci.yml)
+Agnostic infrastructure engine with typed ports and composable runtime for memory, Node and edge.
 
-Agnostic infrastructure engine with typed ports, pluggable adapters for edge (Cloudflare) and on-premise (Docker Compose), and composable runtime.
+No vendor lock-in. No hardcoded SDKs. microinfra owns contracts and wiring helpers. Your app owns schema and business logic.
 
-No vendor lock-in, no hardcoded SDKs. `microinfra` owns the contracts — typed ports, registry, env schema, composable runtime — and the app owns the wiring through adapters.
+## What you will build
 
-## Features
+By the end of this tutorial you will run one runtime across Bun, Yoga, Pothos, Next, TanStack Start and Cloudflare, with GraphQL over WebSocket and queue workers sharing the same context logic.
 
-- **Typed ports** — cache, database, object storage, queue, pubsub, and realtime are interfaces. Memory adapters ship in the box, real ones are one import away.
-- **Composable runtime** — `createTestInfra`, `createNodeInfra`, `createEdgeInfra` assemble the same `RuntimeEnv` shape for tests, containers, and Workers.
-- **Node adapters** — libSQL, HTTP Redis cache (Upstash or self-hosted), Redis Streams queue with worker, S3-compatible objects, `ws`/`Bun.serve` realtime.
-- **Edge adapters** — KV cache, R2 objects, D1 database, Queues producer/consumer, Durable Objects realtime with hibernation.
-- **Workers** — `runWorker` routes jobs by type over any `QueuePort`; edge batches route through `createQueueConsumer`.
-- **Zod env schema** — one `EnvConfig` validated from any `EnvPort`, zero hardcoded domains.
-- **Test contracts** — every port has a contract suite, so custom adapters prove compatibility by running it.
+Audience: developers integrating microinfra for the first time.
+Goal: integrate and use latest transport and Cloudflare helpers in your stack.
+Scope: latest GraphQL WS flow and Cloudflare entry helpers only. No deep dive into cache, objects, queue internals or contracts.
 
-## Installation
+## Requirements
 
-Distributed through GitHub releases. No npm publish.
+- Bun installed and working
+- A GraphQL schema built with Yoga or Pothos
+- A relations object defined with defineRelations
+- Access to Cloudflare bindings only if you deploy to edge
 
-```bash
-# bun
-bun add github:ynoacamino/microinfra#v0.1.0 zod
+## Install
 
-# npm
-npm install github:ynoacamino/microinfra#v0.1.0
+Use latest tag for reproducible installs. Package is consumed straight from src through exports map, so there is no build step and no dist in repo.
 
-# pnpm
-pnpm add github:ynoacamino/microinfra#v0.1.0
+```sh
+bun add github:ynoacamino/microinfra#latest zod
 ```
 
-Pin a tag for reproducible installs. The package is consumed straight from `src/` through the `exports` map, so there is no build step and no `dist/` in the repo. Peer dependencies resolve from npm as usual:
+Split entry points keep bundles lean. Core plus memory adapters live in microinfra. Node adapters plus node runtime live in microinfra/node. Edge adapters plus edge runtime live in microinfra/edge. Memory adapters only live in microinfra/memory.
 
-| Peer  | Version | Needed for |
-| ----- | ------- | ---------- |
-| `zod` | `^4`    | `microinfra` |
+Pin same drizzle-orm as microinfra in your app so schema types match built client. Pin same graphql as microinfra in your app so schema execution matches.
 
-Split entry points keep bundles lean:
+## 1 Quick start with memory
 
-| Import              | Contents                                  |
-| ------------------- | ----------------------------------------- |
-| `microinfra`        | Core, memory adapters, test runtime       |
-| `microinfra/node`   | Node adapters + node runtime (`libsql`, `ws`, S3, Redis) |
-| `microinfra/edge`   | Edge adapters + edge runtime (KV, R2, D1, Queues, Durable Objects) |
-| `microinfra/memory` | Memory adapters only                      |
-
-## Usage
-
-### Test runtime: everything in memory
+Goal: see runtime shape with zero external services.
 
 ```ts
 import { createTestInfra } from "microinfra";
 
-const rt = createTestInfra({ env: { PORT: "7001" } });
+const rt = createTestInfra({
+  env: {
+    PORT: "7001"
+  }
+});
 
 await rt.cache.put("k", "v");
-await rt.queue?.enqueueJob("job-1", "export");
 rt.pubsub.publish("events", { hello: "world" });
 ```
 
-### Node runtime: containers with memory fallbacks
+Expected: cache write succeeds and pubsub publish returns without error. You now know RuntimeEnv shape used everywhere else.
+
+## 2 Prepare your runtime once
+
+Goal: create one shared runtime for your app process.
 
 ```ts
-import { createNodeInfra } from "microinfra/node";
-
-const rt = createNodeInfra({ vars: process.env as Record<string, string>, dbClient: libsql });
-// redis configured -> HTTP Redis cache + Redis Streams queue, else memory
-// S3 configured -> S3 objects, else inject objectPort or memory
-```
-
-### App runtime: database without drizzle constructors
-
-```ts
+import { once } from "microinfra";
 import { createAppRuntime } from "microinfra/node";
-import { relations } from "./db/schema"; // tables + defineRelations
+import { relations } from "./db/schema";
 
-const rt = createAppRuntime(process.env, { relations });
-const db = rt.db.orm; // LibSQLDatabase<typeof relations>, driver picked by URL scheme
-// DATABASE_URL http(s): -> libsql-server/Turso, file: -> embedded (forbidFileDb by default)
+export const rt = once("infra", () =>
+  createAppRuntime(process.env, { relations })
+);
 ```
 
-The app only declares tables + `defineRelations`; microinfra picks the driver (embedded vs http vs D1 on edge via `createAppRuntimeEdge`). Pin the same `drizzle-orm` version as microinfra (`1.0.0-rc.4`) so schema types match the built client.
+Expected: rt.db.orm ready, driver picked by DATABASE_URL scheme, file scheme for embedded and http scheme for remote. Reuse rt in every handler. Do not create a new runtime per request.
 
-### Background jobs
+Use once to survive reload in dev and serverless reuse. Use createAppRuntimeEdge on edge with bindings and same relations.
 
-```ts
-import { runWorker } from "microinfra";
+## 3 Enable GraphQL over WebSocket
 
-const stop = await runWorker(rt, {
-  export: async (jobId) => service.processJob(jobId),
-});
-// ...
-await stop();
-```
+Goal: run graphql-ws protocol without importing any transport library.
 
-### GraphQL over WebSocket (transport-agnostic)
+Handler owns all state per peer and operation. Each transport adapts to same peer shape with id, send and context.
 
 ```ts
+import { contextFromRuntime, syntheticRequest } from "microinfra";
 import { createGraphqlWs } from "microinfra";
 
-const graphqlWs = createGraphqlWs({ schema, getContext: (peer) => buildContext(peer) });
-
-// adapt any transport to the { id, send, context } peer surface:
-open: (peerId) => graphqlWs.open(peerId),
-message: (peer, text) => graphqlWs.message({ id: peer.id, send: (t) => peer.send(t), context: peer.context }, text),
-close: (peerId) => graphqlWs.close(peerId),
+const graphqlWs = createGraphqlWs({
+  schema,
+  getContext: (peer) =>
+    contextFromRuntime(rt, {
+      db: rt.db.orm,
+      user: peer.context,
+      request: syntheticRequest("ws://internal/graphql")
+    })
+});
 ```
 
-### Cloudflare entrypoints (no framework import)
+Expected: graphqlWs exposes open, message and close. Protocol handled as connection init answers ack, ping answers pong, subscribe streams next then complete or error, complete cancels one operation, close cancels all for that peer. Invalid payloads ignored silently. Parse and validation failures send error without complete. Resolver failures send next with errors then complete. Stream directives send error.
+
+State lives on handler instance, so each handler owns peer registry and is testable with fake peers and no socket.
+
+## 4 Connect Bun and ws
+
+Goal: expose same handler on Bun serve and node ws.
 
 ```ts
-import { cfEnv, cfVars, createBatchRunner, stashDoEnv } from "microinfra/edge";
-
-stashDoEnv(doInitPayload); // inside your Durable Object init
-const runQueue = createBatchRunner({ createRuntime, createHandlers });
-await runQueue({ batch }); // in your queue consumer
+Bun.serve({
+  port: 4000,
+  fetch(req, server) {
+    const peerId = crypto.randomUUID();
+    if (server.upgrade(req, { data: { peerId } })) {
+      return undefined;
+    }
+    return new Response("ws only", { status: 426 });
+  },
+  websocket: {
+    open(ws) {
+      graphqlWs.open(ws.data.peerId);
+    },
+    async message(ws, msg) {
+      await graphqlWs.message(
+        {
+          id: ws.data.peerId,
+          send: (t) => ws.send(t),
+          context: ws.data
+        },
+        String(msg)
+      );
+    },
+    async close(ws) {
+      await graphqlWs.close(ws.data.peerId);
+    }
+  }
+});
 ```
 
-### Realtime: one event object, every transport
-```ts
-import { createMemoryRealtime } from "microinfra";
-import { attachWsRealtime } from "microinfra/node";
-import { createDurableRealtime } from "microinfra/edge";
+Expected: Bun upgrades HTTP to socket, open registers peer, message routes GraphQL frames, close releases all operations. Use same three calls for node ws and CrossWS and Durable Objects. Populate context at upgrade with user data, then read it in getContext for auth.
 
-const events = {
-  onConnect: (c) => c.send(JSON.stringify({ type: "welcome", id: c.id })),
-  onMessage: (c, message) => realtime.broadcast(`[${c.id}] ${message}`),
-  onDisconnect: (c) => console.log("bye", c.id),
-};
+## 5 Connect Yoga and Pothos
 
-const realtime = createMemoryRealtime(events);
-const client = await realtime.connectClient();
-await client.sendToServer("hello");
-
-attachWsRealtime(wss, events); // node (ws)
-// Bun.serve({ fetch, websocket: createBunRealtimeHandler(events).handler })
-createDurableRealtime(ctx, events); // inside your Durable Object
-```
-
-## Patterns
-
-### Ports and adapters
-
-Every side effect is a port. Implement the interface with your stack and inject it:
-
-```ts
-import { createMemoryCache } from "microinfra";
-import type { CachePort, QueuePort } from "microinfra";
-
-const cache: CachePort = createMemoryCache();
-await cache.put("session:1", "…", { ttlMs: 60_000 });
-```
-
-### Runtime per target
-
-`createTestInfra` for unit tests, `createNodeInfra` for Docker Compose, `createEdgeInfra` for Cloudflare Workers. All three return the same `RuntimeEnv`, so application code never branches on the target.
-
-### Contracts
-
-Custom adapters prove compatibility by running the contract suite. Copy the suites from `src/tests/contract/` (`cache`, `objects`, `queue`, `pubsub`, `realtime`, `database`) into your test setup and run them against your adapter:
+Goal: use one context for HTTP and sockets.
 
 ```ts
-import { describeRealtimeContract } from "./contracts/realtime.contract";
+import { createYoga } from "graphql-yoga";
+import SchemaBuilder from "@pothos/core";
+import { sessionUser } from "microinfra";
 
-describeRealtimeContract("my-adapter", (events) => myHarness(events));
+const builder = new SchemaBuilder({ Context: {} });
+const schema = builder.toSchema();
+
+const yoga = createYoga({
+  schema,
+  context: async ({ request }) => {
+    const session = await auth.api.getSession({ headers: request.headers });
+    return contextFromRuntime(rt, {
+      db: rt.db.orm,
+      user: sessionUser(session),
+      request
+    });
+  }
+});
 ```
 
-### Realtime chat relay
+Expected: Yoga serves HTTP with full user context. Sockets reuse same schema via getContext. Pothos fields resolve with db, runtime, user and request. Pothos subscriptions can consume pubsub as async source.
 
-`src/examples/realtime-chat.ts` shows the standard wiring: one `RealtimeEvents` object driving memory, `ws`, `Bun.serve`, and Durable Objects.
+Keep Yoga for HTTP only. Keep WS logic in graphqlWs handler. Share ServiceContext type between both paths.
 
-## Versioning
+## 6 Connect Next and TanStack Start
 
-Releases are semver tags published to GitHub Releases. Pin the tag in your install string:
+Goal: serve GraphQL HTTP from server routes and keep sockets outside serverless handlers.
 
-```bash
-bun add github:ynoacamino/microinfra#v0.1.0
+```ts
+export async function POST(req) {
+  const ctx = contextFromRuntime(rt, {
+    db: rt.db.orm,
+    user: sessionUser(await getSession()),
+    request: req
+  });
+  return toNativeResponse(await yoga.handleRequest(req, ctx));
+}
 ```
+
+```ts
+export async function createPost(fd) {
+  const ctx = contextFromRuntime(rt, {
+    db: rt.db.orm,
+    user: sessionUser(await getSession()),
+    request: syntheticRequest("next://server-action")
+  });
+  return service.create(ctx, fd);
+}
+```
+
+Expected: route handler returns native response. Server action builds context with synthetic request. TanStack Start uses same pattern with serverFn and api route. Always convert Yoga response with toNativeResponse. That helper buffers body and does not support streaming.
+
+Do not run long polling workers inside route handlers. Run workers in separate process with runWorker or edge batch runner.
+
+## 7 Deploy to Cloudflare
+
+Goal: read bindings inside workers and Durable Objects and run queue batches with one helper.
+
+Worker entrypoints populate global env, but code inside Durable Objects never runs those entrypoints, so bindings are invisible there unless stashed.
+
+```ts
+import { cfEnv, stashDoEnv } from "microinfra/edge";
+import { createAppRuntimeEdge } from "microinfra/edge";
+
+class ChatRoom {
+  constructor(state, env) {
+    stashDoEnv({ env });
+  }
+  async fetch(req) {
+    const bindings = cfEnv();
+    const runtime = createAppRuntimeEdge(bindings, { relations });
+    return new Response("ok");
+  }
+}
+```
+
+```ts
+import { createBatchRunner } from "microinfra/edge";
+
+const runQueue = createBatchRunner({
+  createRuntime: (bindings) => createAppRuntimeEdge(bindings, { relations }),
+  createHandlers: (runtime) => ({
+    "notify.attendance": async (job) => service.notify(job.data)
+  })
+});
+```
+
+Expected: cfEnv returns Durable Object env when stashed, else worker env, else undefined on local. cfVars filters strings for env parsing. runQueue builds edge runtime and routes each message by type, ack on success and retry on unknown type or throw. Missing bindings throws with clear error.
+
+Wire stashDoEnv to your Durable Object init hook. Wire runQueue to your queue hook. Use once per Nitro preset so reload reuses runtime.
+
+## What you achieved
+
+- One runtime reused across all frameworks
+- One GraphQL handler driving Bun, ws, Yoga, Pothos, Next and Start
+- One Cloudflare wiring for bindings and queues
+- Same context logic for HTTP and sockets
+
+## Next steps
+
+- Turn one Pothos field to read from cache then DB
+- Add one queue handler and observe ack and retry
+- Move WS endpoint to Durable Objects and keep HTTP on workers
