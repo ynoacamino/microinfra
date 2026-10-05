@@ -33,5 +33,3 @@ export type { BatchRunnerOptions, CfQueueBatchShape, CfQueueMessageShape } from 
 export { createBatchRunner, stashDoEnv } from "./runtime/cf-hooks";
 export type { EdgeInfraOptions } from "./runtime/edge";
 export { createEdgeInfra } from "./runtime/edge";
-export type { DefineRealtimeDoOptions, RealtimeDoEnv, RealtimeDoState } from "./runtime/realtime-do";
-export { defineDoExports, defineRealtimeDO } from "./runtime/realtime-do";

@@ -9,6 +9,21 @@ function cfEnv() {
 	if (typeof globalThis === "undefined") return void 0;
 	return globalThis.__do_env__ ?? globalThis.__env__;
 }
+/**
+* Strict check: does this value carry Cloudflare bindings?
+* An empty object means node — frameworks like Hono expose c.env = {}
+* on Bun, and that must not build an edge runtime.
+*/
+function hasEdgeBindings(env) {
+	if (typeof env !== "object" || env === null) return false;
+	const bindings = env;
+	if ("DB" in bindings) return true;
+	if ("KV" in bindings) return true;
+	if ("MY_BUCKET" in bindings) return true;
+	if ("QUEUE" in bindings) return true;
+	if ("REALTIME_DO" in bindings) return true;
+	return false;
+}
 /** Only the string entries (secrets + vars), e.g. for env schema parsing. */
 function cfVars(env) {
 	const out = {};
@@ -38,10 +53,10 @@ var CloudflareEnv = class {
 		return out;
 	}
 	static isConfigured(bindings) {
-		return Boolean(bindings && (bindings.KV || bindings.MY_BUCKET || bindings.DB));
+		return hasEdgeBindings(bindings);
 	}
 };
 
 //#endregion
-export { cfEnv as n, cfVars as r, CloudflareEnv as t };
-//# sourceMappingURL=cf-env-DV3BYeCw.js.map
+export { hasEdgeBindings as i, cfEnv as n, cfVars as r, CloudflareEnv as t };
+//# sourceMappingURL=cf-env-IK8m1hFH.js.map

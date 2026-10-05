@@ -41,7 +41,7 @@ Split entry points keep bundles lean:
 | `microinfra`      | Core, memory adapters, test runtime, unified DB types (`AppDrizzleDb`, `requireOrm`), queue helpers              |
 | `microinfra/node` | Node adapters + node runtime (`libsql`, `ws`, S3, Redis)                                                          |
 | `microinfra/edge` | Edge adapters + edge runtime (KV, R2, D1, Queues, Durable Objects, `defineRealtimeDO`)                            |
-| `microinfra/hybrid` | One-line switchable runtime (`createHybridRuntime`, `resolveTarget`) — node/libsql or edge/D1 from the same call |
+| `microinfra/hybrid` | One-line switchable runtime (`createHybridRuntime`, `hasEdgeBindings`) — node/libsql or edge/D1 from the same call, memoized per target |
 | `microinfra/nitro`  | Framework wiring without framework deps (Nitro config, WS events, CF proxy, worker plugins, realtime DO)          |
 | `microinfra/memory` | Memory adapters only                                                                                              |
 
@@ -337,7 +337,9 @@ Write the Durable Object from the factory so hibernation details stay in one pla
 import { defineRealtimeDO } from "microinfra/nitro";
 
 export const RealtimeDO = defineRealtimeDO({ createHandler: () => createWsHandler(getRuntime()) });
-export const { RealtimeDO: _ } = defineDoExports({ RealtimeDO });
+// En el entrypoint CF el nombre debe preservarse (wrangler.toml):
+// import { RealtimeDO as RealtimeDOClass } from "./server/do/realtime-do";
+// export const RealtimeDO = RealtimeDOClass;
 ```
 
 Expected: attachment ordering, graphql-transport-ws negotiation in the 101, and peerId routing behave identically for every app. Subscriptions still do not survive DO eviction, re-subscribe from the client. Attachment carries peerId only, do auth at upgrade time.

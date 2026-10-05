@@ -1,5 +1,5 @@
 import { t as RuntimeEnv } from "./types-CD7cOcEI.js";
-import { a as defineRealtimeDO, i as defineDoExports, n as RealtimeDoEnv, r as RealtimeDoState, t as DefineRealtimeDoOptions } from "./realtime-do-DzH-XYSp.js";
+import { n as GraphqlWsHandler } from "./graphql-ws-CfFshk4T.js";
 //#region src/runtime/nitro-helpers.d.ts
 type NitroWsRoute = `/${string}`;
 interface NitroMicroinfraConfig {
@@ -81,5 +81,36 @@ export declare function defineCfQueuePlugin(runQueueBatch: (payload: {
   batch: never;
 }) => Promise<void>): (nitroApp: NitroAppLike) => void;
 //#endregion
-export { type DefineRealtimeDoOptions, type NitroMicroinfraConfig, type NitroWsRoute, type RealtimeDoEnv, type RealtimeDoState, defineDoExports, defineRealtimeDO };
+//#region src/runtime/realtime-do.d.ts
+interface RealtimeDoEnv {
+  [key: string]: unknown;
+}
+interface RealtimeDoState {
+  acceptWebSocket(ws: WebSocket): void;
+}
+interface DefineRealtimeDoOptions {
+  createHandler: () => GraphqlWsHandler;
+  onUpgrade?: (request: Request, env: RealtimeDoEnv) => void | Promise<void>;
+}
+/**
+ * Base class factory for the GraphQL realtime Durable Object. Encapsulates:
+ * stashDoEnv, WebSocketPair + hibernation, graphql-transport-ws negotiation in
+ * the 101, accept→serializeAttachment ordering, and peerId routing.
+ * Subscriptions still don't survive DO eviction (documented) — re-subscribe
+ * from the client; attachment only carries peerId (auth via upgrade hook).
+ */
+export declare function defineRealtimeDO(opts: DefineRealtimeDoOptions): {
+  new (state: RealtimeDoState, env: RealtimeDoEnv): {
+    gql: GraphqlWsHandler | undefined;
+    readonly state: RealtimeDoState;
+    readonly env: RealtimeDoEnv;
+    handler(): GraphqlWsHandler;
+    fetch(request: Request): Promise<Response>;
+    webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): Promise<void>;
+    webSocketClose(ws: WebSocket): Promise<void>;
+    webSocketError(ws: WebSocket): Promise<void>;
+  };
+};
+//#endregion
+export type { DefineRealtimeDoOptions, NitroMicroinfraConfig, NitroWsRoute, RealtimeDoEnv, RealtimeDoState };
 //# sourceMappingURL=nitro.d.ts.map

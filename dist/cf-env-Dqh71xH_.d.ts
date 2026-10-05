@@ -19,6 +19,12 @@ declare global {
  * `globalThis.__do_env__` first (see stashDoEnv) — it takes priority here.
  */
 declare function cfEnv(): CfEnvMap | undefined;
+/**
+ * Strict check: does this value carry Cloudflare bindings?
+ * An empty object means node — frameworks like Hono expose c.env = {}
+ * on Bun, and that must not build an edge runtime.
+ */
+declare function hasEdgeBindings(env: unknown): boolean;
 /** Only the string entries (secrets + vars), e.g. for env schema parsing. */
 declare function cfVars(env: CfEnvMap): Record<string, string | undefined>;
 declare class CloudflareEnv implements EnvPort {
@@ -31,5 +37,5 @@ declare class CloudflareEnv implements EnvPort {
   static isConfigured(bindings?: CfBindings): boolean;
 }
 //#endregion
-export { cfVars as a, cfEnv as i, CfEnvMap as n, CloudflareEnv as r, CfBindings as t };
-//# sourceMappingURL=cf-env-KpSLbRKQ.d.ts.map
+export { cfVars as a, cfEnv as i, CfEnvMap as n, hasEdgeBindings as o, CloudflareEnv as r, CfBindings as t };
+//# sourceMappingURL=cf-env-Dqh71xH_.d.ts.map

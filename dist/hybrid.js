@@ -1,35 +1,10 @@
 import { t as createEnvConfig } from "./env-schema-CHblobMd.js";
-import { n as requireOrm, t as ormOf } from "./types-COGhPH3r.js";
 import { t as once } from "./singleton-Bej6xtaw.js";
-import { n as cfEnv, t as CloudflareEnv } from "./cf-env-DV3BYeCw.js";
-import { t as createAppRuntimeEdge } from "./app-runtime-edge-DzMHpE7l.js";
-import { o as createRedisStreamsPubSub, t as createAppRuntime } from "./app-runtime--43GvF4R.js";
+import { i as hasEdgeBindings, n as cfEnv, t as CloudflareEnv } from "./cf-env-IK8m1hFH.js";
+import { t as createAppRuntimeEdge } from "./app-runtime-edge-Cojf_wPv.js";
+import { o as createRedisStreamsPubSub, t as createAppRuntime } from "./app-runtime-D4UOJtdb.js";
 
 //#region src/runtime/hybrid.ts
-/**
-* Detects the target without building anything. Explicit bindings win,
-* otherwise falls back to globalThis.__do_env__/__env__ (Nitro sets it).
-*/
-function resolveTarget(bindings) {
-	const cf = bindings ?? cfEnv();
-	return cf && (cf.DB ?? cf.KV ?? cf.MY_BUCKET ?? cf.QUEUE ?? cf.REALTIME_DO) ? "edge" : cf ? "edge" : "node";
-}
-/**
-* Strict check: does this value carry Cloudflare bindings?
-* Unlike resolveTarget (any truthy env counts as edge, e.g. DO env),
-* an empty object means node — frameworks like Hono expose c.env = {}
-* on Bun, and that must not build an edge runtime.
-*/
-function hasEdgeBindings(env) {
-	if (typeof env !== "object" || env === null) return false;
-	const bindings = env;
-	if ("DB" in bindings) return true;
-	if ("KV" in bindings) return true;
-	if ("MY_BUCKET" in bindings) return true;
-	if ("QUEUE" in bindings) return true;
-	if ("REALTIME_DO" in bindings) return true;
-	return false;
-}
 /**
 * One-line hybrid runtime: node (libsql) or edge (D1) from the same call.
 * On edge, when UPSTASH_* / redis-http is configured, pubsub is upgraded to
@@ -38,9 +13,10 @@ function hasEdgeBindings(env) {
 * Otherwise edge keeps the memory pubsub (same isolate only).
 */
 function createHybridRuntime(bindings, opts = {}) {
-	return once(opts.singletonKey ?? "hybrid", () => {
-		const cf = bindings ?? cfEnv();
-		if (cf && (hasEdgeBindings(cf) || bindings !== void 0)) {
+	const cf = bindings ?? cfEnv();
+	const target = cf && (hasEdgeBindings(cf) || bindings !== void 0) ? "edge" : "node";
+	return once(`${opts.singletonKey ?? "hybrid"}:${target}`, () => {
+		if (target === "edge" && cf) {
 			const rt = createAppRuntimeEdge(cf, {
 				relations: opts.relations,
 				vars: opts.vars
@@ -60,5 +36,5 @@ function createHybridRuntime(bindings, opts = {}) {
 }
 
 //#endregion
-export { createHybridRuntime, hasEdgeBindings, ormOf, requireOrm, resolveTarget };
+export { createHybridRuntime, hasEdgeBindings };
 //# sourceMappingURL=hybrid.js.map

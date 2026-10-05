@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { createHybridRuntime, hasEdgeBindings, resolveTarget } from "./hybrid";
+import { createHybridRuntime, hasEdgeBindings } from "./hybrid";
 
 afterEach(() => {
   globalThis.__env__ = undefined;
@@ -7,21 +7,6 @@ afterEach(() => {
   for (const k of Object.keys(globalThis as Record<string, unknown>)) {
     if (k.startsWith("__microinfra_")) delete (globalThis as Record<string, unknown>)[k];
   }
-});
-
-describe("resolveTarget", () => {
-  it("returns node without bindings", () => {
-    expect(resolveTarget(undefined)).toBe("node");
-  });
-
-  it("returns edge with D1 binding", () => {
-    expect(resolveTarget({ DB: { tag: "d1" } })).toBe("edge");
-  });
-
-  it("reads globalThis.__env__", () => {
-    globalThis.__env__ = { DB: { tag: "d1" } };
-    expect(resolveTarget()).toBe("edge");
-  });
 });
 
 describe("hasEdgeBindings", () => {
@@ -91,9 +76,22 @@ describe("createHybridRuntime", () => {
 
   it("reads bindings from globalThis.__do_env__ first", () => {
     globalThis.__do_env__ = { DB: { tag: "do-d1" } };
-    expect(resolveTarget()).toBe("edge");
+    expect(hasEdgeBindings(globalThis.__do_env__)).toBe(true);
     const rt = createHybridRuntime(undefined, { singletonKey: "test-edge-doenv" });
     expect(rt.mode).toBe("edge");
+  });
+
+  it("memoizes each target separately (per-request resolution is real)", () => {
+    const nodeRt = createHybridRuntime(undefined, {
+      vars: { DATABASE_URL: "http://127.0.0.1:8080" },
+      singletonKey: "test-mixed",
+    });
+    expect(nodeRt.mode).toBe("node");
+    const edgeRt = createHybridRuntime({ DB: { tag: "fake-d1" } }, { singletonKey: "test-mixed" });
+    expect(edgeRt.mode).toBe("edge");
+    expect(edgeRt).not.toBe(nodeRt);
+    // Same target twice still returns the singleton.
+    expect(createHybridRuntime({ DB: { tag: "other" } }, { singletonKey: "test-mixed" })).toBe(edgeRt);
   });
 
   it("keeps memory pubsub on edge without redis config", async () => {

@@ -1,8 +1,8 @@
-import { a as decodeRealtimeMessage, c as createMemoryObjects, d as createNoopLogger, i as RealtimeHub, l as createMemoryCache, n as createSystemClock, o as isWebSocketUpgradeRequest, r as createMemoryRealtime, s as createMemoryPubSub, t as createUuidIds, u as createConsoleLogger } from "./uuid-ids-DloHpFiV.js";
+import { a as createMemoryObjects, c as createNoopLogger, i as createMemoryPubSub, n as createSystemClock, o as createMemoryCache, r as createMemoryRealtime, s as createConsoleLogger, t as createUuidIds } from "./uuid-ids-BZ5yYn8f.js";
 import { n as createMapEnv, t as createNoopCache } from "./noop-cache-DW5EVV6R.js";
 import { t as createMemoryQueue } from "./memory-queue-Fm7wdof8.js";
+import { n as decodeRealtimeMessage, r as isWebSocketUpgradeRequest, t as RealtimeHub } from "./realtime-hub-DeePlZ4G.js";
 import { n as createInfra, t as createEnvConfig } from "./env-schema-CHblobMd.js";
-import { n as requireOrm, t as ormOf } from "./types-COGhPH3r.js";
 import { n as ensureWorkerStarted, t as enqueueJobAndWait } from "./queue-helpers-BqPu8bam.js";
 import { t as once } from "./singleton-Bej6xtaw.js";
 import { n as runWorker, t as runUniversalWorker } from "./universal-worker-oXfN3-sG.js";
@@ -41,6 +41,19 @@ function cacheJson(cache, namespace) {
 //#region src/core/define-adapter.ts
 function defineAdapter(def) {
 	return def;
+}
+
+//#endregion
+//#region src/db/types.ts
+/** Returns the typed orm or undefined (no throw). */
+function ormOf(rt) {
+	return rt.db.orm;
+}
+/** Returns the typed orm or throws with an actionable message. */
+function requireOrm(rt) {
+	const orm = ormOf(rt);
+	if (!orm) throw new Error("[microinfra] DB orm no disponible (revisa DATABASE_URL o binding D1)");
+	return orm;
 }
 
 //#endregion
@@ -83,6 +96,20 @@ function createTestInfra(opts = {}) {
 		pubsub: createMemoryPubSub(),
 		realtime: createMemoryRealtime()
 	});
+}
+
+//#endregion
+//#region src/sanitize.ts
+function sanitize(obj) {
+	return sanitizeValue(obj);
+}
+function sanitizeValue(obj) {
+	if (obj === null) return;
+	if (typeof obj !== "object") return obj;
+	if (Array.isArray(obj)) return obj.map((item) => sanitizeValue(item));
+	const result = {};
+	for (const [key, value] of Object.entries(obj)) result[key] = sanitizeValue(value);
+	return result;
 }
 
 //#endregion
@@ -256,5 +283,5 @@ function createGraphqlWs({ schema, getContext }) {
 }
 
 //#endregion
-export { RealtimeHub, cacheJson, contextFromRuntime, createConsoleLogger, createEnvConfig, createGraphqlWs, createInfra, createMapEnv, createMemoryCache, createMemoryObjects, createMemoryPubSub, createMemoryQueue, createMemoryRealtime, createNoopCache, createNoopLogger, createSystemClock, createTestInfra, createUuidIds, decodeRealtimeMessage, defineAdapter, enqueueJobAndWait, ensureWorkerStarted, isWebSocketUpgradeRequest, once, ormOf, requireOrm, runUniversalWorker, runWorker, sessionUser, syntheticRequest, toNativeResponse };
+export { RealtimeHub, cacheJson, contextFromRuntime, createConsoleLogger, createEnvConfig, createGraphqlWs, createInfra, createMapEnv, createMemoryCache, createMemoryObjects, createMemoryPubSub, createMemoryQueue, createMemoryRealtime, createNoopCache, createNoopLogger, createSystemClock, createTestInfra, createUuidIds, decodeRealtimeMessage, defineAdapter, enqueueJobAndWait, ensureWorkerStarted, isWebSocketUpgradeRequest, once, ormOf, requireOrm, runUniversalWorker, runWorker, sanitize, sessionUser, syntheticRequest, toNativeResponse };
 //# sourceMappingURL=index.js.map

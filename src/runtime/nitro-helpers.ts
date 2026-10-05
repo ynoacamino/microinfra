@@ -1,4 +1,5 @@
 import { cfEnv } from "../adapters/edge/cf-env";
+import { isWebSocketUpgradeRequest } from "../core/realtime-hub";
 import type { RuntimeEnv } from "../core/types";
 import { ensureWorkerStarted } from "./queue-helpers";
 import { once } from "./singleton";
@@ -103,7 +104,7 @@ export async function cfWsProxyFetch(
   request: Request,
   opts: { bindingName?: string; key?: string } = {},
 ): Promise<Response> {
-  if (request.headers.get("upgrade") !== "websocket" && request.headers.get("Upgrade") !== "websocket") {
+  if (!isWebSocketUpgradeRequest(request)) {
     return new Response("Expected WebSocket Upgrade", { status: 426 });
   }
   const ns = cfEnv()?.[opts.bindingName ?? "REALTIME_DO"] as DurableNamespaceLike | undefined;

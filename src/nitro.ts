@@ -7,4 +7,4 @@ export {
   nitroMicroinfraConfig,
 } from "./runtime/nitro-helpers";
 export type { DefineRealtimeDoOptions, RealtimeDoEnv, RealtimeDoState } from "./runtime/realtime-do";
-export { defineDoExports, defineRealtimeDO } from "./runtime/realtime-do";
+export { defineRealtimeDO } from "./runtime/realtime-do";

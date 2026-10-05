@@ -35,7 +35,10 @@ describe("isConfigured cascade", () => {
     expect(isD1Configured({ DB: {} })).toBe(true);
     expect(isR2Configured({ MY_BUCKET: {} })).toBe(true);
     expect(CloudflareEnv.isConfigured({ DB: {} })).toBe(true);
+    expect(CloudflareEnv.isConfigured({ QUEUE: {} })).toBe(true);
+    expect(CloudflareEnv.isConfigured({ REALTIME_DO: {} })).toBe(true);
     expect(CloudflareEnv.isConfigured({})).toBe(false);
+    expect(CloudflareEnv.isConfigured(undefined)).toBe(false);
     const env = new CloudflareEnv({ DB: {}, TOKEN: "abc" }, { PORT: "8787" });
     expect(env.get("TOKEN")).toBe("abc");
     expect(env.all().PORT).toBe("8787");

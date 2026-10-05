@@ -1,9 +1,9 @@
 import { a as ClockPort, c as QueueJob, d as RealtimeConnection, f as RealtimeEvents, i as IdsPort, l as QueuePort, m as EnvPort, n as LogLevel, o as ObjectPort, p as RealtimePort, r as LoggerPort, s as ObjectPutOptions, t as PubSubPort, u as CachePort } from "./pubsub-6-hdisbt.js";
 import { i as DatabasePort, n as RuntimeMode, r as EnvConfig, t as RuntimeEnv } from "./types-CD7cOcEI.js";
 import { i as EdgeQueueBatch, n as runWorker, s as QueueJobMessage, t as JobHandler } from "./worker-gAtgeNKB.js";
-import { i as createGraphqlWs, n as GraphqlWsHandler, r as GraphqlWsPeer, t as CreateGraphqlWsOptions } from "./graphql-ws-CfFshk4T.js";
 import { a as ormOf, i as EmptyRelations, n as AppDrizzleDb, o as requireOrm, r as AppRuntime, t as AnyRelations } from "./types-Jztq4f-9.js";
 import { a as MemoryRealtimeClient, c as createMemoryPubSub, d as createMapEnv, f as createConsoleLogger, i as MemoryRealtime, l as createMemoryObjects, n as createSystemClock, o as createMemoryRealtime, p as createNoopLogger, r as createNoopCache, s as createMemoryQueue, t as createUuidIds, u as createMemoryCache } from "./uuid-ids-DGCnUEpZ.js";
+import { i as createGraphqlWs, n as GraphqlWsHandler, r as GraphqlWsPeer, t as CreateGraphqlWsOptions } from "./graphql-ws-CfFshk4T.js";
 //#region src/core/cache-json.d.ts
 type CacheKeyPart = string | number;
 interface CacheJson {
@@ -123,6 +123,10 @@ type UniversalWorker = {
  */
 export declare function runUniversalWorker(rt: RuntimeEnv, handlers: Record<string, JobHandler>): Promise<UniversalWorker>;
 //#endregion
+//#region src/sanitize.d.ts
+type NullToUndefined<T> = T extends Record<string, unknown> ? { [K in keyof T]: NullToUndefined<Exclude<T[K], null>>; } : Exclude<T, null>;
+export declare function sanitize<T>(obj: T): NullToUndefined<T>;
+//#endregion
 //#region src/schema/env-schema.d.ts
 export declare function createEnvConfig(env: EnvPort): EnvConfig;
 //#endregion
@@ -155,5 +159,5 @@ export declare function contextFromRuntime<TDb>(rt: RuntimeEnv, opts: {
 /** Placeholder request for transports without one (e.g. WebSocket upgrade). */
 export declare function syntheticRequest(url?: string): Request;
 //#endregion
-export { type AdapterDefinition, type AnyRelations, type AppDrizzleDb, type AppRuntime, type CacheJson, type CacheKeyPart, type CachePort, type ClockPort, type CreateGraphqlWsOptions, type CreateInfraOptions, type DatabasePort, type EmptyRelations, type EnsureWorkerOptions, type EnvConfig, type EnvPort, type GraphqlWsHandler, type GraphqlWsPeer, type IdsPort, type JobHandler, type LogLevel, type LoggerPort, type MemoryRealtime, type MemoryRealtimeClient, type ObjectPort, type ObjectPutOptions, type PubSubPort, type QueueJob, type QueuePort, type RealtimeConnectOptions, type RealtimeConnection, type RealtimeEvents, type RealtimePort, type RealtimeSender, type RuntimeEnv, type RuntimeMode, type ServiceContext, type ServiceUser, type TestInfraOptions, type UniversalWorker, createConsoleLogger, createGraphqlWs, createMapEnv, createMemoryCache, createMemoryObjects, createMemoryPubSub, createMemoryQueue, createMemoryRealtime, createNoopCache, createNoopLogger, createSystemClock, createUuidIds, ormOf, requireOrm, runWorker };
+export { type AdapterDefinition, type AnyRelations, type AppDrizzleDb, type AppRuntime, type CacheJson, type CacheKeyPart, type CachePort, type ClockPort, type CreateGraphqlWsOptions, type CreateInfraOptions, type DatabasePort, type EmptyRelations, type EnsureWorkerOptions, type EnvConfig, type EnvPort, type GraphqlWsHandler, type GraphqlWsPeer, type IdsPort, type JobHandler, type LogLevel, type LoggerPort, type MemoryRealtime, type MemoryRealtimeClient, type NullToUndefined, type ObjectPort, type ObjectPutOptions, type PubSubPort, type QueueJob, type QueuePort, type RealtimeConnectOptions, type RealtimeConnection, type RealtimeEvents, type RealtimePort, type RealtimeSender, type RuntimeEnv, type RuntimeMode, type ServiceContext, type ServiceUser, type TestInfraOptions, type UniversalWorker, createConsoleLogger, createGraphqlWs, createMapEnv, createMemoryCache, createMemoryObjects, createMemoryPubSub, createMemoryQueue, createMemoryRealtime, createNoopCache, createNoopLogger, createSystemClock, createUuidIds, ormOf, requireOrm, runWorker };
 //# sourceMappingURL=index.d.ts.map

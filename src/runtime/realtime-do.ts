@@ -1,3 +1,4 @@
+import { isWebSocketUpgradeRequest } from "../core/realtime-hub";
 import type { GraphqlWsHandler } from "../service/graphql-ws";
 import { stashDoEnv } from "./cf-hooks";
 
@@ -57,7 +58,7 @@ export function defineRealtimeDO(opts: DefineRealtimeDoOptions) {
     }
 
     async fetch(request: Request): Promise<Response> {
-      if (request.headers.get("Upgrade") !== "websocket") {
+      if (!isWebSocketUpgradeRequest(request)) {
         return new Response("Expected WebSocket", { status: 400 });
       }
       await opts.onUpgrade?.(request, this.env);
@@ -99,9 +100,4 @@ export function defineRealtimeDO(opts: DefineRealtimeDoOptions) {
       if (peerId) await this.handler().close(peerId);
     }
   };
-}
-
-/** Helper for `exports.cloudflare.ts`: re-export DO classes for the CF entrypoint. */
-export function defineDoExports(classes: Record<string, unknown>): Record<string, unknown> {
-  return { ...classes };
 }

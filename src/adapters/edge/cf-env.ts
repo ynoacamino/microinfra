@@ -28,6 +28,22 @@ export function cfEnv(): CfEnvMap | undefined {
   return globalThis.__do_env__ ?? globalThis.__env__;
 }
 
+/**
+ * Strict check: does this value carry Cloudflare bindings?
+ * An empty object means node — frameworks like Hono expose c.env = {}
+ * on Bun, and that must not build an edge runtime.
+ */
+export function hasEdgeBindings(env: unknown): boolean {
+  if (typeof env !== "object" || env === null) return false;
+  const bindings = env as Record<string, unknown>;
+  if ("DB" in bindings) return true;
+  if ("KV" in bindings) return true;
+  if ("MY_BUCKET" in bindings) return true;
+  if ("QUEUE" in bindings) return true;
+  if ("REALTIME_DO" in bindings) return true;
+  return false;
+}
+
 /** Only the string entries (secrets + vars), e.g. for env schema parsing. */
 export function cfVars(env: CfEnvMap): Record<string, string | undefined> {
   const out: Record<string, string | undefined> = {};
@@ -67,6 +83,6 @@ export class CloudflareEnv implements EnvPort {
   }
 
   static isConfigured(bindings?: CfBindings): boolean {
-    return Boolean(bindings && (bindings.KV || bindings.MY_BUCKET || bindings.DB));
+    return hasEdgeBindings(bindings);
   }
 }

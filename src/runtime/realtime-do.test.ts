@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { defineDoExports, defineRealtimeDO } from "./realtime-do";
+import { defineRealtimeDO } from "./realtime-do";
 
 const withFakeResponse = async (fn: () => Promise<void>) => {
   const RealResponse = globalThis.Response;
@@ -84,11 +84,5 @@ describe("defineRealtimeDO", () => {
     expect(close).toHaveBeenCalledWith("p1");
     await inst.webSocketError(knownWs);
     expect(close).toHaveBeenCalledTimes(3);
-  });
-});
-
-describe("defineDoExports", () => {
-  it("spreads classes", () => {
-    expect(defineDoExports({ A: 1 })).toEqual({ A: 1 });
   });
 });

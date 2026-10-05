@@ -38,6 +38,8 @@ export type { TestInfraOptions } from "./runtime/test";
 export { createTestInfra } from "./runtime/test";
 export { runUniversalWorker, type UniversalWorker } from "./runtime/universal-worker";
 export { type JobHandler, runWorker } from "./runtime/worker";
+export type { NullToUndefined } from "./sanitize";
+export { sanitize } from "./sanitize";
 export { createEnvConfig } from "./schema/env-schema";
 export type { ServiceContext, ServiceUser } from "./service/context";
 export { contextFromRuntime, sessionUser, syntheticRequest } from "./service/context";
