@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { createHybridRuntime, resolveTarget } from "./hybrid";
+import { createHybridRuntime, hasEdgeBindings, resolveTarget } from "./hybrid";
 
 afterEach(() => {
   globalThis.__env__ = undefined;
@@ -21,6 +21,23 @@ describe("resolveTarget", () => {
   it("reads globalThis.__env__", () => {
     globalThis.__env__ = { DB: { tag: "d1" } };
     expect(resolveTarget()).toBe("edge");
+  });
+});
+
+describe("hasEdgeBindings", () => {
+  it("returns false without bindings", () => {
+    expect(hasEdgeBindings(undefined)).toBe(false);
+    expect(hasEdgeBindings(null)).toBe(false);
+    expect(hasEdgeBindings("edge")).toBe(false);
+    expect(hasEdgeBindings({})).toBe(false);
+  });
+
+  it("returns true when any known binding key is present", () => {
+    expect(hasEdgeBindings({ DB: {} })).toBe(true);
+    expect(hasEdgeBindings({ KV: {} })).toBe(true);
+    expect(hasEdgeBindings({ MY_BUCKET: {} })).toBe(true);
+    expect(hasEdgeBindings({ QUEUE: {} })).toBe(true);
+    expect(hasEdgeBindings({ REALTIME_DO: {} })).toBe(true);
   });
 });
 

@@ -1,6 +1,6 @@
 {
   "name": "microinfra",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "description": "Agnostic infrastructure engine with typed ports, pluggable adapters for edge (Cloudflare) and on-premise (Docker Compose), and composable runtime.",
   "license": "MIT",
   "type": "module",

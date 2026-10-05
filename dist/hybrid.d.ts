@@ -19,6 +19,13 @@ interface HybridRuntimeOptions<TRelations extends AnyRelations$1 = EmptyRelation
  */
 export declare function resolveTarget(bindings?: CfBindings | Record<string, unknown> | undefined): HybridTarget;
 /**
+ * Strict check: does this value carry Cloudflare bindings?
+ * Unlike resolveTarget (any truthy env counts as edge, e.g. DO env),
+ * an empty object means node — frameworks like Hono expose c.env = {}
+ * on Bun, and that must not build an edge runtime.
+ */
+export declare function hasEdgeBindings(env: unknown): boolean;
+/**
  * One-line hybrid runtime: node (libsql) or edge (D1) from the same call.
  * On edge, when UPSTASH_* / redis-http is configured, pubsub is upgraded to
  * shared redis-streams so Worker mutations reach Durable Object subscriptions

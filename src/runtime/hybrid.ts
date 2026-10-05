@@ -29,9 +29,21 @@ export function resolveTarget(bindings?: CfBindings | Record<string, unknown> | 
   return cf && (cf.DB ?? cf.KV ?? cf.MY_BUCKET ?? cf.QUEUE ?? cf.REALTIME_DO) ? "edge" : cf ? "edge" : "node";
 }
 
-function isEdgeBindings(bindings: CfBindings | undefined): boolean {
-  if (!bindings) return false;
-  return Boolean(bindings.DB ?? bindings.KV ?? bindings.MY_BUCKET ?? bindings.QUEUE ?? bindings.REALTIME_DO);
+/**
+ * Strict check: does this value carry Cloudflare bindings?
+ * Unlike resolveTarget (any truthy env counts as edge, e.g. DO env),
+ * an empty object means node — frameworks like Hono expose c.env = {}
+ * on Bun, and that must not build an edge runtime.
+ */
+export function hasEdgeBindings(env: unknown): boolean {
+  if (typeof env !== "object" || env === null) return false;
+  const bindings = env as Record<string, unknown>;
+  if ("DB" in bindings) return true;
+  if ("KV" in bindings) return true;
+  if ("MY_BUCKET" in bindings) return true;
+  if ("QUEUE" in bindings) return true;
+  if ("REALTIME_DO" in bindings) return true;
+  return false;
 }
 
 /**
@@ -47,7 +59,7 @@ export function createHybridRuntime<TRelations extends AnyRelations = EmptyRelat
 ): RuntimeEnv<unknown, AppDrizzleDb<TRelations>> {
   return once(opts.singletonKey ?? "hybrid", () => {
     const cf = (bindings ?? cfEnv()) as CfBindings | undefined;
-    if (cf && (isEdgeBindings(cf) || bindings !== undefined)) {
+    if (cf && (hasEdgeBindings(cf) || bindings !== undefined)) {
       const rt = createAppRuntimeEdge(cf, { relations: opts.relations, vars: opts.vars });
       if (!opts.disableSharedPubsub) {
         try {

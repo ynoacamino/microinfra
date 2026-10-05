@@ -14,9 +14,21 @@ function resolveTarget(bindings) {
 	const cf = bindings ?? cfEnv();
 	return cf && (cf.DB ?? cf.KV ?? cf.MY_BUCKET ?? cf.QUEUE ?? cf.REALTIME_DO) ? "edge" : cf ? "edge" : "node";
 }
-function isEdgeBindings(bindings) {
-	if (!bindings) return false;
-	return Boolean(bindings.DB ?? bindings.KV ?? bindings.MY_BUCKET ?? bindings.QUEUE ?? bindings.REALTIME_DO);
+/**
+* Strict check: does this value carry Cloudflare bindings?
+* Unlike resolveTarget (any truthy env counts as edge, e.g. DO env),
+* an empty object means node — frameworks like Hono expose c.env = {}
+* on Bun, and that must not build an edge runtime.
+*/
+function hasEdgeBindings(env) {
+	if (typeof env !== "object" || env === null) return false;
+	const bindings = env;
+	if ("DB" in bindings) return true;
+	if ("KV" in bindings) return true;
+	if ("MY_BUCKET" in bindings) return true;
+	if ("QUEUE" in bindings) return true;
+	if ("REALTIME_DO" in bindings) return true;
+	return false;
 }
 /**
 * One-line hybrid runtime: node (libsql) or edge (D1) from the same call.
@@ -28,7 +40,7 @@ function isEdgeBindings(bindings) {
 function createHybridRuntime(bindings, opts = {}) {
 	return once(opts.singletonKey ?? "hybrid", () => {
 		const cf = bindings ?? cfEnv();
-		if (cf && (isEdgeBindings(cf) || bindings !== void 0)) {
+		if (cf && (hasEdgeBindings(cf) || bindings !== void 0)) {
 			const rt = createAppRuntimeEdge(cf, {
 				relations: opts.relations,
 				vars: opts.vars
@@ -48,5 +60,5 @@ function createHybridRuntime(bindings, opts = {}) {
 }
 
 //#endregion
-export { createHybridRuntime, ormOf, requireOrm, resolveTarget };
+export { createHybridRuntime, hasEdgeBindings, ormOf, requireOrm, resolveTarget };
 //# sourceMappingURL=hybrid.js.map
