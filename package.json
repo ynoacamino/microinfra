@@ -1,16 +1,16 @@
 {
   "name": "microinfra",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "Agnostic infrastructure engine with typed ports, pluggable adapters for edge (Cloudflare) and on-premise (Docker Compose), and composable runtime.",
   "license": "MIT",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
-    "./edge": "./src/edge.ts",
-    "./node": "./src/node.ts",
-    "./memory": "./src/memory.ts",
-    "./hybrid": "./src/hybrid.ts",
-    "./nitro": "./src/nitro.ts",
+    ".": "./dist/index.js",
+    "./edge": "./dist/edge.js",
+    "./node": "./dist/node.js",
+    "./memory": "./dist/memory.js",
+    "./hybrid": "./dist/hybrid.js",
+    "./nitro": "./dist/nitro.js",
     "./package.json": "./package.json"
   },
   "sideEffects": false,

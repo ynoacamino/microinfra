@@ -1,0 +1,85 @@
+import { t as RuntimeEnv } from "./types-CD7cOcEI.js";
+import { a as defineRealtimeDO, i as defineDoExports, n as RealtimeDoEnv, r as RealtimeDoState, t as DefineRealtimeDoOptions } from "./realtime-do-DzH-XYSp.js";
+//#region src/runtime/nitro-helpers.d.ts
+type NitroWsRoute = `/${string}`;
+interface NitroMicroinfraConfig {
+  preset: "bun" | "cloudflare-module";
+  features: {
+    websocket: boolean;
+  };
+  handlers: Array<{
+    route: NitroWsRoute;
+    handler: string;
+  }>;
+  plugins: string[];
+  alias?: Record<string, string>;
+  isEdge: boolean;
+}
+/**
+ * Single source of truth for the Nitro switch (bun <-> cloudflare-module).
+ * Returns plain data — no nitro import — so the app's vite.config.ts is 3 lines.
+ * Encapsulates: websocket:false on CF (else crossws intercepts the DO proxy),
+ * ws-handler vs cf-ws-handler, worker vs cf-queue plugin, and the
+ * @whatwg-node/fetch esm-ponyfill alias required in workerd.
+ */
+export declare function nitroMicroinfraConfig(opts?: {
+  wsRoute?: NitroWsRoute;
+  esmPonyfillPath?: string;
+}): NitroMicroinfraConfig;
+interface NitroWsPeer {
+  id: string;
+  send(text: string): void;
+  context?: unknown;
+}
+interface NitroWsEvents {
+  open(peer: NitroWsPeer): void;
+  message(peer: NitroWsPeer, raw: string | {
+    text(): string;
+  }): Promise<void>;
+  close(peer: NitroWsPeer): Promise<void>;
+}
+interface GraphqlWsHandlerLike {
+  open(peerId: string): void;
+  message(peer: {
+    id: string;
+    send(t: string): void;
+    context?: unknown;
+  }, text: string): Promise<void>;
+  close(peerId: string): Promise<void>;
+}
+/**
+ * Adapts the transport-agnostic graphql-ws machine to Nitro CrossWS events.
+ * The app still calls defineWebSocketHandler (keeps `nitro` out of microinfra
+ * deps) but the peer adaptation lives here, HMR-safe via once().
+ */
+export declare function createNitroWsEvents(getHandler: () => GraphqlWsHandlerLike, singletonKey?: string): NitroWsEvents;
+/**
+ * Framework-free CF WS proxy: Worker doesn't terminate the socket, it forwards
+ * the upgrade to the RealtimeDO singleton. Usable inside defineEventHandler.
+ */
+export declare function cfWsProxyFetch(request: Request, opts?: {
+  bindingName?: string;
+  key?: string;
+}): Promise<Response>;
+interface NitroAppLike {
+  hooks: {
+    hook(name: string, fn: (payload: {
+      batch: unknown;
+    }) => Promise<void>): void;
+  };
+}
+/**
+ * Node worker plugin with retries (never fails silently when Redis wasn't up
+ * before dev). Skips on edge — CF consumes via the queue hook instead.
+ */
+export declare function defineWorkerPlugin(getRuntime: () => RuntimeEnv, start: (rt: RuntimeEnv) => Promise<() => Promise<void>>, opts?: {
+  retries?: number;
+  retryDelayMs?: number;
+}): () => Promise<void>;
+/** CF queue consumer plugin (wires the Nitro `cloudflare:queue` hook). */
+export declare function defineCfQueuePlugin(runQueueBatch: (payload: {
+  batch: never;
+}) => Promise<void>): (nitroApp: NitroAppLike) => void;
+//#endregion
+export { type DefineRealtimeDoOptions, type NitroMicroinfraConfig, type NitroWsRoute, type RealtimeDoEnv, type RealtimeDoState, defineDoExports, defineRealtimeDO };
+//# sourceMappingURL=nitro.d.ts.map
