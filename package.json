@@ -1,6 +1,6 @@
 {
   "name": "microinfra",
-  "version": "0.5.0",
+  "version": "0.8.0",
   "description": "Agnostic infrastructure engine with typed ports, pluggable adapters for edge (Cloudflare) and on-premise (Docker Compose), and composable runtime.",
   "license": "MIT",
   "type": "module",
@@ -9,11 +9,13 @@
     "./edge": "./src/edge.ts",
     "./node": "./src/node.ts",
     "./memory": "./src/memory.ts",
+    "./hybrid": "./src/hybrid.ts",
+    "./nitro": "./src/nitro.ts",
     "./package.json": "./package.json"
   },
   "sideEffects": false,
   "scripts": {
-    "build": "tsdown src/index.ts src/edge.ts src/node.ts src/memory.ts --dts --format esm --out-dir dist",
+    "build": "tsdown src/index.ts src/edge.ts src/node.ts src/memory.ts src/hybrid.ts src/nitro.ts --dts --format esm --out-dir dist",
     "typecheck": "tsgo --noEmit",
     "typecheck:build": "tsgo --noEmit -p tsconfig.build.json",
     "lint": "biome check .",

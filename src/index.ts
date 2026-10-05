@@ -17,6 +17,8 @@ export { decodeRealtimeMessage, isWebSocketUpgradeRequest, RealtimeHub } from ".
 export type { CreateInfraOptions } from "./core/registry";
 export { createInfra } from "./core/registry";
 export type { RuntimeEnv, RuntimeMode } from "./core/types";
+export type { AnyRelations, AppDrizzleDb, AppRuntime, EmptyRelations } from "./db/types";
+export { ormOf, requireOrm } from "./db/types";
 export { toNativeResponse } from "./http/response";
 export type { CachePort } from "./ports/cache";
 export type { ClockPort } from "./ports/clock";
@@ -29,6 +31,8 @@ export type { ObjectPort, ObjectPutOptions } from "./ports/object-storage";
 export type { PubSubPort } from "./ports/pubsub";
 export type { QueueJob, QueuePort } from "./ports/queue";
 export type { RealtimeConnection, RealtimeEvents, RealtimePort } from "./ports/realtime";
+export type { EnsureWorkerOptions } from "./runtime/queue-helpers";
+export { enqueueJobAndWait, ensureWorkerStarted } from "./runtime/queue-helpers";
 export { once } from "./runtime/singleton";
 export type { TestInfraOptions } from "./runtime/test";
 export { createTestInfra } from "./runtime/test";
